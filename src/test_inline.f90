@@ -1,7 +1,8 @@
 PROGRAM test_inline
+#ifdef __INTEL_COMPILER
+    USE IFPORT
+#endif
 IMPLICIT NONE
-
-
 
   integer i;
   REAL*8 id;
@@ -13,9 +14,11 @@ IMPLICIT NONE
   REAL*8 acc
   integer arr_len;
 
+
   arr_len = sz*sz*sz*sz*sz*sz
-
-
+#ifdef __INTEL_COMPILER
+  write(*, *) "using ifort"
+#endif
 
 
   ! fill arr1 with random numbers, arr2 with zeros
@@ -63,9 +66,13 @@ END SUBROUTINE
 
 ! fill array with random values
 SUBROUTINE fillrand(arr, arr_len)
+#ifdef __INTEL_COMPILER
+  USE IFPORT
+#endif
+
   IMPLICIT NONE
-  REAL*8, intent(inout), DIMENSION(arr_len) :: arr
   integer, intent(in) :: arr_len
+  REAL*8, intent(inout), DIMENSION(arr_len) :: arr
 
   ! local variables
   integer i
@@ -79,9 +86,9 @@ END SUBROUTINE
 
 SUBROUTINE outer_func2(u_i, u_ip1, sz)
   IMPLICIT NONE
+  integer, intent(in) :: sz
   REAL*8, intent(in), DIMENSION(sz, sz, sz, sz, sz, sz) :: u_i
   REAL*8, intent(inout), DIMENSION(sz, sz, sz, sz, sz, sz) :: u_ip1
-  integer, intent(in) :: sz
 
   ! local variables
   integer d1, d2, d3, d4, d5, d6, ia, ib, nghost
