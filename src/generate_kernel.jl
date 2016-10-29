@@ -157,9 +157,18 @@ function getKernelAssembly(maxdim::Integer)
   return str
 end
 
+function indentString(indent::Integer, str::ASCIIString)
+
+  indent_str = " "^indent
+  newline_indent = "\n"*indent_str
+  str = indent_str*str
+  str = replace(str, "\n", newline_indent)
+
+  return str
+end
 
 stencil = ["1.0", "2", "3", "4", "5"]
-maxdim = 4
+maxdim = 6
 
 generate_kernel(maxdim, stencil)
 #str = getStencil(maxdim, stencil, 2)
