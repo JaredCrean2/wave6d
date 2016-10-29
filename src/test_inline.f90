@@ -28,12 +28,20 @@ IMPLICIT NONE
   call cpu_time(tfinish)
 
 !  write(*, *) "tstart = ", tstart, ", tfinish = ", tfinish
-  print '("Time = ", f8.6," second.")', tfinish-tstart
+  print '("outer_func2 time = ", f8.6," second.")', tfinish-tstart
 
-  ! sum the array to make sure it was computed
 
-  acc = sum(arr2)
-  write(*, *) "sum of array = ", acc
+  ! fill arr1 with random numbers, arr2 with zeros
+  call fillrand(arr1, arr_len)
+  call fill(arr2, arr_len, 0.0)
+
+  ! do calulcation
+  call cpu_time(tstart)
+  call outer_func2(arr1, arr2, sz)
+  call cpu_time(tfinish)
+
+!  write(*, *) "tstart = ", tstart, ", tfinish = ", tfinish
+  print '("outer_func2 time = ", f8.6," second.")', tfinish-tstart
 
 
 STOP
