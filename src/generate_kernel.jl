@@ -167,7 +167,7 @@ function indentString(indent::Integer, str::ASCIIString)
   return str
 end
 
-stencil = ["1.0", "2", "3", "4", "5"]
+stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
 maxdim = 6
 
 generate_kernel(maxdim, stencil)
