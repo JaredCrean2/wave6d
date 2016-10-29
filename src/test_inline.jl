@@ -72,7 +72,7 @@ function outer_func(u_i, u_ip1)
       for d4=ia:ib
         for d3 = ia:ib
           for d2= ia:ib
-            for d1 = ia:ib
+            @simd for d1 = ia:ib
               idx = (d1, d2, d3, d4, d5, d5)
               kernel(u_i, u_ip1, idx)
             end
@@ -97,7 +97,7 @@ function outer_func2(u_i, u_ip1)
       for d4=ia:ib
         for d3 = ia:ib
           for d2= ia:ib
-            for d1 = ia:ib
+            @simd for d1 = ia:ib
 
 
               delta_12 = 0.5
@@ -181,18 +181,35 @@ function runtest()
   fill!(arr2, 0.0)
 
   dtype = typeof(arr1)
+
   fname = "outer_func_llvm.txt"
   f = open(fname, "w")
-
   println(f, "outer_func code_llvm = ")
   code_llvm(f, outer_func, (dtype, dtype))
   close(f)
+
+  fname = "outer_func_native.txt"
+  f = open(fname, "w")
+  println(f, "outer_func code_native = ")
+  code_native(f, outer_func, (dtype, dtype))
+  close(f)
+
+
+
 
   fname = "outer_func2_llvm.txt"
   f = open(fname, "w")
   println(f, "outer_func2 code_llvm = ")
   code_llvm(f, outer_func2, (dtype, dtype))
   close(f)
+
+  fname = "outer_func2_native.txt"
+  f = open(fname, "w")
+  println(f, "outer_func2 code_native = ")
+  code_native(f, outer_func2, (dtype, dtype))
+  close(f)
+
+
 
 end
 
