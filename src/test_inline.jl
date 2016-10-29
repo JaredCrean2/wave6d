@@ -67,12 +67,12 @@ function outer_func(u_i, u_ip1)
   ia = nghost + 1
   ib = s1 - nghost
 
-  for d1=ia:ib
-    for d2=ia:ib
-      for d3=ia:ib
-        for d4 = ia:ib
-          for d5= ia:ib
-            for d6 = ia:ib
+  for d6=ia:ib
+    for d5=ia:ib
+      for d4=ia:ib
+        for d3 = ia:ib
+          for d2= ia:ib
+            for d1 = ia:ib
               idx = (d1, d2, d3, d4, d5, d5)
               kernel(u_i, u_ip1, idx)
             end
@@ -92,12 +92,12 @@ function outer_func2(u_i, u_ip1)
   ia = nghost + 1
   ib = s1 - nghost
 
-  for d1=ia:ib
-    for d2=ia:ib
-      for d3=ia:ib
-        for d4 = ia:ib
-          for d5= ia:ib
-            for d6 = ia:ib
+  for d6=ia:ib
+    for d5=ia:ib
+      for d4=ia:ib
+        for d3 = ia:ib
+          for d2= ia:ib
+            for d1 = ia:ib
 
 
               delta_12 = 0.5
