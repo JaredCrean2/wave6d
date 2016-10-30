@@ -1,30 +1,63 @@
 # generate the spatial kernel for an n-dimensional wave equation solver
 
-function generate_kernel(maxdim, stencil)
-# writes to file kernel_dim_npts
+
+function generate_kernel(maxdim, stencil, neq)
 
   npts = length(stencil)
-  order = npts - 1
+
   fname = string("kernel_", maxdim, "_", npts, ".jl")
   println("creating file ", fname)
   f = open(fname, "w")
 
-  second_line_indent = " "^6
-  for dim=1:maxdim
-    var_name = string("u", dim, dim)
-    stencil_dim = getStencil(maxdim, stencil, dim, second_line_indent)
-    println(f, var_name, " = ", stencil_dim)
-  end
+  func_sig = getKernelSignature(maxdim, npts)
+  println(f, func_sig)
 
-  kernel_assembly = getKernelAssembly(maxdim)
-  println(f, kernel_assembly)
+  func_prologue = getKernelPrologue(maxdim)
+  func_prologue = indentString(2, func_prologue)
+  println(f, func_prologue)
+
+  func_body = generate_body(maxdim, stencil, neq)
+  func_body = indentString(2, func_body)
+  println(f, func_body)
+
+  func_end = getKernelEpilogue()
+  println(f, func_end)
 
   close(f)
+
+  return nothing
+end
+
+function generate_body(maxdim, stencil, neq)
+# writes to file kernel_dim_npts
+# neq is the number of equations in the system
+
+  npts = length(stencil)
+  order = npts - 1
+  second_line_indent = " "^8
+
+  str = ""
+
+
+  for eq=1:neq  # loop over equations in the system
+    for dim=1:maxdim
+      var_name = string("u", dim, dim, "_", eq)
+      stencil_dim = getStencil(maxdim, stencil, dim, eq, second_line_indent)
+      str *= string(var_name, " = ", stencil_dim)*"\n"
+
+    end
+  
+    # sum the results into the receiving arrays
+    kernel_assembly = getKernelAssembly(maxdim, eq, neq - eq + 1)
+    str *= kernel_assembly*"\n"
+  end
+
+  return str
 
 end
 
 
-function getStencil(maxdim::Integer, stencil, dim::Integer, 
+function getStencil(maxdim::Integer, stencil, dim::Integer, src_eq::Integer, 
                     second_line_indent::ASCIIString="")
 
 # Generates a string that multiplies the given stencil coefficients by
@@ -36,10 +69,16 @@ function getStencil(maxdim::Integer, stencil, dim::Integer,
 # Each term of the stencil is put on its own line.  second_line_indent
 # is the string prepended to all lines except the first to indent them
 
+# the src_eq an dest_eq are the equation indices for the right hand side
+#   and left hand side arrays, and is the final index
+
 # the stencil array is expected to be an array of strings
 # the strings are enclosed in parenthesis before multiplication
 # great pains are taken to ensure alignment of all terms of the stencil
-  
+
+# the returned string is of the form:
+#    udd = stencil calculation...
+
   npts = length(stencil)
   stencil_startoffset = -div(npts - 1, 2)
   stencil_endoffset = div(npts - 1, 2)
@@ -107,7 +146,7 @@ function getStencil(maxdim::Integer, stencil, dim::Integer,
     str_pt = str_pt[1:end-2]
 
     # close bracket
-    str_pt = str_pt*"]"
+    str_pt = str_pt*", $src_eq"*"]"
 
 
     # figure out whether or not to add a plus sign for another term
@@ -125,23 +164,27 @@ function getStencil(maxdim::Integer, stencil, dim::Integer,
 
 end
 
-function getKernelAssembly(maxdim::Integer)
+function getKernelAssembly(maxdim::Integer, src_eq::Integer, dest_eq::Integer)
+# sums the terms from each dimension into the receiving array
+# src_eq tells which equation the terms come from, dest_eq tells which
+# equation they are summed into
 
-  second_line_indent = " "^(9 + 4*maxdim)
+  second_line_indent = " "^(12 + 4*maxdim)
   # write receiving location
   str = "u_ip1[ "
   for i=1:maxdim
     str *= "d$i, "
   end
 
+  str *= string(dest_eq, "] = ")
   # remove final comma and space, add close brack
-  str = str[1:end-2]
-  str *= "] = "
+#  str = str[1:end-2]
+#  str *= "] = "
 
   # multiply stencil in each direction by grid spacing square
   for i=1:maxdim
     delta_name = string("delta_", i, "2")
-    stencil_fac_name = string("u", i, i)
+    stencil_fac_name = string("u", i, i, "_", src_eq)
     str *= delta_name*"*"*stencil_fac_name*" + "
 
     if ((i % 3) == 0) && i != maxdim
@@ -152,13 +195,60 @@ function getKernelAssembly(maxdim::Integer)
 
   # remove last " + "
   str = str[1:end-3]
+  str *= "\n"
 
 
   return str
 end
 
-function indentString(indent::Integer, str::ASCIIString)
+function getKernelSignature(maxdim::Integer, npts::Integer)
+# get the function signature
 
+  kernel_name = string("kernel_", maxdim, "_", npts)
+  array_typetag = string("::AbstractArray{T,", maxdim+1, "}")
+
+  str = string("function ", kernel_name, "{T}(params::ParamType{", maxdim, "},",
+                 " idx,\n")
+  line_indent = " "^19
+  str *= string(line_indent, "u_i", array_typetag, ", u_ip1", array_typetag, ")\n")
+
+  return str
+end
+
+function getKernelPrologue(maxdim::Integer)
+
+  str = ""
+
+  for i=1:maxdim
+    varname = "d$i"
+    str *= string(varname, " = idx(", i, ")\n")
+  end
+
+  str *= "\n"
+
+  for i=1:maxdim
+    varname = string("delta_", i, "2")
+    fieldname = string("delta[", i, "]")
+    str *= string(varname, " = ", "params.", fieldname, "\n")
+  end
+
+  str *= "\n"
+
+
+  return str
+end
+
+function getKernelEpilogue()
+  # get the return and end statement
+
+  str = "  return nothing\n"
+  str *= "end"
+
+  return str
+end
+
+function indentString(indent::Integer, str::ASCIIString)
+# indent all lines of a string a certain number of spaces
   indent_str = " "^indent
   newline_indent = "\n"*indent_str
   str = indent_str*str
@@ -170,6 +260,6 @@ end
 stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
 maxdim = 5
 
-generate_kernel(maxdim, stencil)
+generate_kernel(maxdim, stencil, 2)
 #str = getStencil(maxdim, stencil, 2)
 #println("str = \n", str)
