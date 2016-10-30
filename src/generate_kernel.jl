@@ -1,11 +1,11 @@
 # generate the spatial kernel for an n-dimensional wave equation solver
 
 function generate_kernel(maxdim, stencil)
-# writes to file kernel_dim_order
+# writes to file kernel_dim_npts
 
   npts = length(stencil)
   order = npts - 1
-  fname = string("kernel_", maxdim, "_", order, ".jl")
+  fname = string("kernel_", maxdim, "_", npts, ".jl")
   println("creating file ", fname)
   f = open(fname, "w")
 
@@ -168,7 +168,7 @@ function indentString(indent::Integer, str::ASCIIString)
 end
 
 stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
-maxdim = 6
+maxdim = 5
 
 generate_kernel(maxdim, stencil)
 #str = getStencil(maxdim, stencil, 2)
