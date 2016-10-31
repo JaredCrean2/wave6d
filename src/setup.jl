@@ -64,6 +64,34 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
                       ias, ibs, send_reqs, recv_reqs, peernums, xLs, nghost, coords)
 end
 
+function mpiCalculation(comm, N::Integer)
+# comm is a MPI communicator, N is the number of dimensions
+
+  comm_size = MPI.Comm_size(comm)
+  comm_rank = MPI.Comm_rank(comm)
+
+  matches = Array(Int, 100, N)
+  # figure out how many rank in each dimension
+
+ 
+
+end
+
+function resize_arr(arr::AbstractMatrix)
+
+  m, n = size(arr)
+  arr2 = Array(Int, 2*m, n)
+
+  for i=1:m
+    for j=1:n
+      arr2[i, j] = arr[i, j]
+    end
+  end
+
+  return arr2
+end
+
+
 
 
 
