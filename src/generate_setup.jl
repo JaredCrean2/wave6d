@@ -1,6 +1,6 @@
 function generate_setup(maxdim::Integer)
 
-  fname = "setup.jl"
+  fname = "setup2.jl"
   println("generating ", fname)
   f = open(fname, "w")
 
