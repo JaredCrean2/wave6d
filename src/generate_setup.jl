@@ -18,12 +18,11 @@ function getMpiSetup(maxdim)
 
 
 
-  str = "function getMPIMatches(comm, N::Integer)\n"
-  str *= "# comm is a MPI communicator, N is the number of dimensions\n\n"
+  str = "function getMPIMatches(comm_size::Integer, N::Integer)\n"
+  str *= "# comm_size is the number of MPI ranks, N is the number of dimensions\n\n"
   indent = "  "
-  str *= indent*"comm_size = MPI.Comm_size(comm)\n"
-  str *= indent*"comm_rank = MPI.Comm_rank(comm)\n\n"
   str *= indent*"matches = Array(Int, 100, N)\n"
+  str *= indent*"idx = 1\n"
 
 
   str *= "\n"
@@ -42,7 +41,7 @@ function getMpiSetup(maxdim)
     str *= tmp_str
   end
 
-  str *= indent*"return matches\n"
+  str *= indent*"return matches, idx - 1\n"
   str *= "end\n"
 
   return str

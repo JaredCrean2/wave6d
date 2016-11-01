@@ -66,12 +66,99 @@ end
 
 function mpiCalculation(comm, N::Integer)
 # comm is a MPI communicator, N is the number of dimensions
+# computes the number of processes along each axis by solving a 
+# least squared problem (brute force)
+
+# it then gets the N indices that describe the location of this rank in
+# the grid, and the ranks of its neighbors
 
   comm_size = MPI.Comm_size(comm)
   comm_rank = MPI.Comm_rank(comm)
 
-  matches = Array(Int, 100, N)
-  # figure out how many rank in each dimension
+  matches, idx = getMpiMatches(comm_size, N)
+
+  # figure out how many rank in each dimension by minimizing
+  # the square of the difference from the optimal value.
+  # the optimal value is the Nth root of the number of 
+  # processes
+  max_diff = typemax(Int)
+  idx_opt = 0
+  optimal_val = Float64(comm_size)^(1/N)
+
+  for i=1:idx
+    diff_squared = 0.0
+    for j=1:N
+      diff = optimal_val - matches[i, j]
+      diff_squared += diff*diff
+    end
+
+    if diff_squared < max_diff
+      max_diff = diff_squared
+      idx_opt = i
+    end
+  end
+
+
+  dims = matches[idx_opt, :]
+  # generate an N dimensional array and assign MPI
+  # ranks to it
+
+  # this is type-unstable, but that's fine
+  # TODO: see if it is possible to avoid allocating this
+  rankgrid = zeros(Int, dims...)
+
+  for i=0:(comm_size-1)
+    rankgrid[i] = i
+  end
+
+  # get i, j, k... that describe this ranks location in the grid
+  my_subs = ind2sub(size(rankgrid), comm_rank + 1)
+  neighbor_subs = copy(my_subs)
+  
+  # get the rank number of the adjacent blocks for each dimension
+  peer_nums = Array(Int, 2, N)
+
+  for i=1:N
+    idx_i = my_subs[i]
+    # this behaves correctly even if a dimension is 1
+    # left rank
+    if idx_i == 1  # this is the leftmost process
+      left_idx = dims[i]  # the maximum process
+    else
+      left_idx = idx - 1
+    end
+
+    # right rank
+    if idx_i == dims[i]
+      right_idx = 1
+    else
+      right_idx = idx_i + 1
+    end
+
+
+    # substitute left_idx, right_idx into my_subs to compute the rank
+    copy!(my_subs, neighbor_subs)
+    neighbor_subs[i] = left_idx
+    left_rank = subs2ind(size(rankgrid), neighbor_subs)
+
+    neighbor_subs[i] = right_idx
+    right_rank = subs2ind(size(rankgrid), neighbor_subs)
+
+    peer_nums[1, i] = left_rank
+    peer_nums[2, i] = right_rank
+  end
+
+  return peer_nums
+end
+
+
+
+
+
+
+
+
+
 
  
 
