@@ -18,14 +18,32 @@ function getMpiSetup(maxdim)
 
 
 
-  str = "function mpiCalculation(comm, N::Integer)"
+  str = "function getMPIMatches(comm, N::Integer)\n"
   str *= "# comm is a MPI communicator, N is the number of dimensions\n\n"
-  str *= "comm_size = MPI.Comm_size(comm)\n"
-  str *= "comm_rank = MPI.Comm_rank(comm)\n\n"
-  str *= "matches = Array(Int, 100, N)\n"
+  indent = "  "
+  str *= indent*"comm_size = MPI.Comm_size(comm)\n"
+  str *= indent*"comm_rank = MPI.Comm_rank(comm)\n\n"
+  str *= indent*"matches = Array(Int, 100, N)\n"
+
 
   str *= "\n"
-  str *= getSearchN(maxdim)
+
+  for i=1:maxdim
+    str *= indent*"if N == $i\n\n"
+    indent  *= "  "
+
+    search_i = getSearchN(i)
+    search_i = indentString(length(indent), search_i)
+    str *= search_i
+
+    indent = indent[1:end-2]
+
+    tmp_str = "\n"*indent*"end\n\n"
+    str *= tmp_str
+  end
+
+  str *= indent*"return matches\n"
+  str *= "end\n"
 
   return str
 end
@@ -50,6 +68,7 @@ function getSearchN(N::Integer)
 
   str *= str_inner*"\n"
 
+  # check if value matches
   str *= "\n"*indent*"if val == comm_size\n"
   indent *= "  "
 
@@ -57,6 +76,14 @@ function getSearchN(N::Integer)
     str *= indent*"matches[idx, $i] = d$i\n"
   end
   str *= indent*"idx += 1\n"
+
+  # check if array needs resizing
+  str *= indent*"if idx > size(matches, 1)\n"
+  indent *= "  "
+  str *= indent*"matches = resize_arr(matches)\n"
+  indent = indent[1:end-2]
+  str *= indent*"end\n"
+
 
   indent = indent[1:end-2]
   str *= indent*"end\n\n"  # end if val == commsize
@@ -67,6 +94,16 @@ function getSearchN(N::Integer)
     str *= indent*"end\n"
     indent = indent[1:end-2]
   end
+
+  return str
+end
+
+function indentString(indent::Integer, str::ASCIIString)
+# indent all lines of a string a certain number of spaces
+  indent_str = " "^indent
+  newline_indent = "\n"*indent_str
+  str = indent_str*str
+  str = replace(str, "\n", newline_indent)
 
   return str
 end
