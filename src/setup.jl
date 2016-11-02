@@ -15,6 +15,7 @@ type ParamType{N}
   coords::Array{LinSpace{Float64}, 1}
 end
 
+include("setup2.jl")  # the auto-generated part
 
 function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 # Ns = number of grid points (not including ghosts
@@ -99,20 +100,25 @@ function mpiCalculation(comm, N::Integer)
   end
 
 
-  dims = matches[idx_opt, :]
+  dims = (matches[idx_opt, :]...)
   # generate an N dimensional array and assign MPI
   # ranks to it
 
   # this is type-unstable, but that's fine
   # TODO: see if it is possible to avoid allocating this
+
+  # the calculations done below are equivalent:
+  #=
   rankgrid = zeros(Int, dims...)
 
   for i=0:(comm_size-1)
     rankgrid[i] = i
   end
+  =#
+  # where rankgrid is the array that maps ranks to their position on the grid
 
   # get i, j, k... that describe this ranks location in the grid
-  my_subs = ind2sub(size(rankgrid), comm_rank + 1)
+  my_subs = ind2sub(dims, comm_rank + 1)
   neighbor_subs = copy(my_subs)
   
   # get the rank number of the adjacent blocks for each dimension
@@ -139,10 +145,10 @@ function mpiCalculation(comm, N::Integer)
     # substitute left_idx, right_idx into my_subs to compute the rank
     copy!(my_subs, neighbor_subs)
     neighbor_subs[i] = left_idx
-    left_rank = subs2ind(size(rankgrid), neighbor_subs)
+    left_rank = subs2ind(dims, neighbor_subs)
 
     neighbor_subs[i] = right_idx
-    right_rank = subs2ind(size(rankgrid), neighbor_subs)
+    right_rank = subs2ind(dims, neighbor_subs)
 
     peer_nums[1, i] = left_rank
     peer_nums[2, i] = right_rank
@@ -151,18 +157,6 @@ function mpiCalculation(comm, N::Integer)
   return peer_nums
 end
 
-
-
-
-
-
-
-
-
-
- 
-
-end
 
 function resize_arr(arr::AbstractMatrix)
 
