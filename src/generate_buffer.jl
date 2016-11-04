@@ -5,12 +5,13 @@ function generate_buffers(nghost, Nmax)
 # nghost is the number of ghost cells on each interface
 # N is the maximum number of dimenions
 
-  fname = string("buffers_", nghost, "_", Nmax, ".jl")
+  fname = string("buffers_", nghost, ".jl")
+  println("generating file ", fname)
   f = open(fname, "w")
-#  for N=1:Nmax  # loop over maximum dimensions
-
-  str = generateFunction(nghost, Nmax)
-  println(f, str)
+  for N=1:Nmax  # loop over maximum dimensions
+    str = generateFunction(nghost, N)
+    println(f, str)
+  end
   close(f)
   return nothing
 end
@@ -22,7 +23,7 @@ function generateFunction(nghost, N)
   #      ie. buffer to main or main to buffer
   # write function signature
   str = ""
-  str *= "function copyToBuffer{N}(params::ParamType{T,N}, u_arr::AbstractArray{T, N, N2},\n           buff::AbstractArray{T, N2}, dir::Integer, isupper::Bool)\n"
+  str *= "function copyToBuffer(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
   str *= "# copy ghost values from u_arr to buff\n"
   str *= "# dir specifies the direction to copy, (must be in the range 1:N\n"
   str *= "# isupper tells whether to copy the values for the maximum indices\n"
@@ -32,8 +33,6 @@ function generateFunction(nghost, N)
 
   indent = "  "
   str *= indent*"@assert params.nghost == 2\n"
-  str *= indent*"@assert N == $N\n"
-  str *= indent*"@assert N2 == $N\n"
 
   str *= "\n"
 
@@ -100,6 +99,10 @@ function generateFunction(nghost, N)
 
 
   end
+
+  str *= indent*"return nothing\n"
+  indent = indent[1:end-2]
+  str *= "end\n\n"
 
   return str
 
