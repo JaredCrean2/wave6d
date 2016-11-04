@@ -9,21 +9,28 @@ function generate_buffers(nghost, Nmax)
   println("generating file ", fname)
   f = open(fname, "w")
   for N=1:Nmax  # loop over maximum dimensions
-    str = generateFunction(nghost, N)
+    str = generateFunction(nghost, N, true)
+    println(f, str)
+    str = generateFunction(nghost, N, false)
     println(f, str)
   end
   close(f)
   return nothing
 end
 
-function generateFunction(nghost, N)
+function generateFunction(nghost, N, forward=true)
 # generate the copy function for a particular N
+# forward = true mean copy from main array to buffer
+# foward = false means copy from buffer to main array
 
-  #TODO: add an if statememnt to control copy direction
-  #      ie. buffer to main or main to buffer
+  if forward
+    fname = "copyToBuffer"
+  else
+    fname = "copyToMain"
+  end
   # write function signature
   str = ""
-  str *= "function copyToBuffer(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
+  str *= "function $fname(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
   str *= "# copy ghost values from u_arr to buff\n"
   str *= "# dir specifies the direction to copy, (must be in the range 1:N\n"
   str *= "# isupper tells whether to copy the values for the maximum indices\n"
@@ -84,7 +91,11 @@ function generateFunction(nghost, N)
     end
 
     for j=1:nghost
-      str *= indent*getAssignment(N, dim, "dfixed$j", j)
+      if forward
+        str *= indent*getAssignment(N, dim, "dfixed$j", j)
+      else
+        str *= indent*getAssignment2(N, dim, "dfixed$j", j)
+      end
     end
 
     # end statements
@@ -161,4 +172,49 @@ function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
 
   return str
 end
+
+function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
+# assign an element of u_arr to buff
+# dir_var is the name of the fixed variable in u_arr
+# ind is the fixed index in buff
+
+  str = ""
+
+  str *= "u_arr[ "
+
+  curr_idx = 1
+  for i=1:N
+    if i == dir
+      str *= dir_var*", "
+    else
+      tmp = N - curr_idx
+      var_name = "d$tmp"
+      curr_idx += 1
+      str *= var_name*", "
+    end
+  end
+
+  str = str[1:end-2]
+  str *= "] = "
+
+
+  str *= "ubuff[ "
+  curr_idx = 1
+  for i=1:N
+    if i == dir
+      str *= string(ind)*", "
+    else
+      tmp = N - curr_idx
+      str *= "d$tmp"*", "
+      curr_idx += 1
+    end
+  end
+
+ 
+  str = str[1:end-2]  # remove trailing space and comma
+  str *= "]\n"
+
+  return str
+end
+
 generate_buffers(2, 3)
