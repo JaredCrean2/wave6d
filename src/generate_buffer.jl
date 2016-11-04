@@ -217,4 +217,4 @@ function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
   return str
 end
 
-generate_buffers(2, 3)
+generate_buffers(2, 6)

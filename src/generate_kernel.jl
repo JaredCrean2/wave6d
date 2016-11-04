@@ -204,8 +204,8 @@ end
 function getKernelSignature(maxdim::Integer, npts::Integer)
 # get the function signature
 
-  kernel_name = string("kernel_", maxdim, "_", npts)
-  array_typetag = string("::AbstractArray{T,", maxdim+1, "}")
+  kernel_name = string("kernel_", maxdim)
+  array_typetag = string("::AbstractArray{T,", maxdim, "}")
 
   str = string("function ", kernel_name, "{T}(params::ParamType{", maxdim, "},",
                  " idx,\n")
