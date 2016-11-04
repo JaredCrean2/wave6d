@@ -105,61 +105,6 @@ function mpiCalculation(comm, N::Integer)
   end
 
 
-  dims = (matches[idx_opt, :]...)
-  # generate an N dimensional array and assign MPI
-  # ranks to it
-
-  # this is type-unstable, but that's fine
-  # TODO: see if it is possible to avoid allocating this
-
-  # the calculations done below are equivalent:
-  #=
-  rankgrid = zeros(Int, dims...)
-
-  for i=0:(comm_size-1)
-    rankgrid[i] = i
-  end
-  =#
-  # where rankgrid is the array that maps ranks to their position on the grid
-
-  # get i, j, k... that describe this ranks location in the grid
-  my_subs = ind2sub(dims, comm_rank + 1)
-  neighbor_subs = copy(my_subs)
-  
-  # get the rank number of the adjacent blocks for each dimension
-  peer_nums = Array(Int, 2, N)
-
-  for i=1:N
-    idx_i = my_subs[i]
-    # this behaves correctly even if a dimension is 1
-    # left rank
-    if idx_i == 1  # this is the leftmost process
-      left_idx = dims[i]  # the maximum process
-    else
-      left_idx = idx - 1
-    end
-
-    # right rank
-    if idx_i == dims[i]
-      right_idx = 1
-    else
-      right_idx = idx_i + 1
-    end
-
-
-    # substitute left_idx, right_idx into my_subs to compute the rank
-    copy!(my_subs, neighbor_subs)
-    neighbor_subs[i] = left_idx
-    left_rank = subs2ind(dims, neighbor_subs)
-
-    neighbor_subs[i] = right_idx
-    right_rank = subs2ind(dims, neighbor_subs)
-
-    peer_nums[1, i] = left_rank
-    peer_nums[2, i] = right_rank
-  end
-
-  return peer_nums
 end
 
 """
@@ -283,10 +228,126 @@ function resize_arr(arr::AbstractMatrix)
   return arr2
 end
 
+"""
+  Calculate some grid related information: neighboring processor numbers,
+  number of points in each dimension, etc.
+
+  comm_rank is the zero-based comm rank
+
+  peer_nums is the 2 x N array of (one-based) process numbers for 
+  the neighboring processes in each dimension.  The first dimensions is
+  the right neigbor, and the second one is the left.
+"""
+function getGridInfo(dim_vec::AbstractVector, comm_rank)
+  N = length(dim_vec)
+  comm_size = prod(dim_vec)
+
+  dims = (dim_vec...)
+  # generate an N dimensional array and assign MPI
+  # ranks to it
+
+  # the calculations done below are equivalent:
+  #=
+  rankgrid = zeros(Int, dims...)
+
+  for i=0:(comm_size-1)
+    rankgrid[i] = i
+  end
+  =#
+  # where rankgrid is the array that maps ranks to their position on the grid
+
+  # get i, j, k... that describe this ranks location in the grid
+  my_subs_tpl = ind2sub(dims, comm_rank + 1)
+  my_subs = [my_subs_tpl...]  # make a vector
+  neighbor_subs = copy(my_subs)
+
+  
+  # get the rank number of the adjacent blocks for each dimension
+  peer_nums = Array(Int, 2, N)
+
+  for i=1:N
+    idx_i = my_subs[i]
+    # this behaves correctly even if a dimension is 1
+    # left rank
+    if idx_i == 1  # this is the leftmost process
+      left_idx = dims[i]  # the maximum process
+    else
+      left_idx = idx_i - 1
+    end
+
+    # right rank
+    if idx_i == dims[i]
+      right_idx = 1
+    else
+      right_idx = idx_i + 1
+    end
 
 
+    # substitute left_idx, right_idx into my_subs to compute the rank
+    copy!(neighbor_subs, my_subs)  # (dest, src)
+    neighbor_subs[i] = left_idx
+    left_rank = sub2ind(dims, neighbor_subs...)
+
+    neighbor_subs[i] = right_idx
+    right_rank = sub2ind(dims, neighbor_subs...)
+
+    peer_nums[1, i] = left_rank
+    peer_nums[2, i] = right_rank
+  end
+
+  # should do dim = dim - 1 to convert to zero based process numbers that
+  # MPI uses
+  return peer_nums, my_subs
+end
 
 
+"""
+  Computes how many points are owned by this process in each dimension
+"""
+function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector, 
+                      Npoints::AbstractVector)
+
+  N = length(my_subs)
+  local_points = zeros(Int, N)
+
+  for i=1:N
+    Npoints_i = Npoints[i] # number of points along this axis
+    nprocs_i = dim_vec[i]  # number of processes along this axis
+
+    npoints_last = 0
+    npoints_others = 0
+    if Npoints_i % nprocs_i = 0
+      npoints_last = div(Npoints_i, nprocs_i)
+      npoints_others = npoints_last
+    elseif Npoints_i % (nprocs_i - 1) == 0
+      # handle this case
+      # every process gives up one point to give to the last process
+      npoints_others = div(Npoints_i, nprocs_i - 1)
+      npoints_last = 0
+
+      npoints_others -= 1
+      npoints_last += nprocs_i - 1
+    else
+
+      npoints_others = div(Npoints_i, nprocs_i - 1)
+      npoints_last = Npoints_i - npoints_others
+    end
+
+    if my_subs[i] == dim_vec[i]  # if I am the last process
+      local_points[i] = npoints_last
+    else
+      local_points[i] = npoints_others
+    end
+
+    if my_subs == ones(N)  && npoints_last > npoints_others  # first process
+      println("Warning: load imbalance in dimension ", i, ", npoints_others = ", npoints_others, ", npoints_last = ", npoints_last)
+    end
+    
+  end  # end loop
+
+
+  return local_points
+end
 
 
 
