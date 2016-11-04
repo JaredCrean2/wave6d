@@ -6,6 +6,8 @@ use an arbitrary order stencil in each direction.
 
 ## Performance Testing
 
+### Comparison with Fortran
+
 `src/test_inline.jl` and `src/test_inline.f90` have test implementations of a 
 6 dimensional kernel.  The performance results are
 
@@ -32,3 +34,22 @@ vectorized the computation.  The conclusions from this data are that Julia
 is as fast as Fortran for this kind of computation and that separating
 the kernel into a separate function still gives good performance.
 
+### Systems of Equations
+Solving a `d` dimensional system of equations requires an array with `d+1`
+dimenions. The question is whether the dimension corresponding to the equation
+number should be the first or the last.  The file `test_inline6.jl` contains
+a test for a 5 dimensional system.  `outer_func` puts the equation index first,
+`outer_func2` puts it last.  Results:
+
+```
+testing outer_func
+  0.361604 seconds
+  0.362164 seconds
+testing outer_func2
+  0.215627 seconds
+  0.214228 seconds
+```
+
+A look at the llvm code shows `outer_func` scalarized the loop. For absolute
+performance, it looks like vectorized instructions won out over spatial
+locality.

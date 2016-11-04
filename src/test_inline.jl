@@ -75,7 +75,7 @@ function outer_func(u_i, u_ip1)
         for d3 = ia:ib
           for d2= ia:ib
             @simd for d1 = ia:ib
-              idx = (d1, d2, d3, d4, d5, d5)
+              idx = (d1, d2, d3, d4, d5, d6)
               kernel(u_i, u_ip1, idx)
             end
           end
