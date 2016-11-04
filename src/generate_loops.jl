@@ -57,9 +57,10 @@ function generateLoops(N, npts)
   end
 
   # remove trailing space and comma
-  str_inner = str_inner[1:end-2]
+  if N > 1
+    str_inner = str_inner[1:end-2]
+  end
   str_inner *= ")\n"
-
   str *= str_inner
 
   # call kernel
@@ -83,4 +84,4 @@ end
 
 
 
-generate_loops(3, 5)
+generate_loops(6, 5)
