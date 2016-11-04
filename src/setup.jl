@@ -65,6 +65,11 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
                       ias, ibs, send_reqs, recv_reqs, peernums, xLs, nghost, coords)
 end
 
+
+"""
+  This function calculates the number of processes along each axis
+  via exhaustive search
+"""
 function mpiCalculation(comm, N::Integer)
 # comm is a MPI communicator, N is the number of dimensions
 # computes the number of processes along each axis by solving a 
@@ -156,6 +161,112 @@ function mpiCalculation(comm, N::Integer)
 
   return peer_nums
 end
+
+"""
+  This function calculates the number of processes along each dimension
+  of the grid using a factorization algorithm.  The algorithm is
+  agnostic to the number of dimensions.
+
+  I believe the algorithm produces the optimal decomposition of the processes
+  into an N dimesnional grid, although I cannot formally prove it does.
+  Comparison to n exhaustive search of the 1 to 500 processes in 3 dimensions
+  shows identical results.
+
+"""
+function getCartesianDecomposition(comm_size::Integer, N::Integer)
+
+  if comm_size != 1
+    factor_dict = factor(comm_size)
+  else
+    factor_dict = Dict{Int, Int}(1 => 1)
+  end
+#  println("factor_dict = ", factor_dict)
+  factors = collect(keys(factor_dict))
+  multiplicity = collect(values(factor_dict))
+
+  nfactors = sum(multiplicity)
+#  println("factors = ", factors)
+#  println("multiplicty = ", multiplicity)
+#  println("nfactors = ", nfactors)
+
+  # put factors into array, including multiples
+  factor_arr = Array(Int, nfactors)
+  idx = 1
+  idx_cnt = 0
+  for i=1:nfactors
+    factor_arr[i] = factors[idx]
+    idx_cnt += 1
+    if idx_cnt == multiplicity[idx]
+      idx += 1
+      idx_cnt = 0
+    end
+  end
+
+  # put N largest factors in decomp (filling with ones if not enough factors)
+  sort!(factor_arr, rev=true)
+  cart_decomp = Array(Int, N)
+  fill!(cart_decomp, 1)
+  
+#  println("factor_arr = ", factor_arr)
+
+  for i=1:min(nfactors, N)
+    cart_decomp[i] = factor_arr[i]
+  end
+
+#  println("after initial insertions cart_decomp = ", cart_decomp)
+
+  if nfactors > N
+    opt_val = comm_size^(1/N)
+#    println("more factors than dimensions")
+    for i=(N+1):nfactors
+      factor_i = factor_arr[i]
+      # figure out where to put this factor in order to minimize error
+      idx_opt = getOptimalIdx(cart_decomp, factor_i, opt_val)
+      cart_decomp[idx_opt] *= factor_i
+#      println("multiplying index ", idx_opt, " by factor ", factor_i)
+#      println("cart_decomp = ", cart_decomp)
+
+    end
+  end
+
+#  println("cart_decomp = ", cart_decomp)
+
+  @assert prod(cart_decomp) == comm_size
+
+  return cart_decomp
+end
+
+function getOptimalIdx(vals::AbstractArray, factor, opt_val)
+# see where to add factor to vals to produce the minimum error
+
+  min_err = typemax(Float64)
+  min_idx = 0
+  for i=1:length(vals)
+    vals[i] *= factor
+    err_i = getLSError(vals, opt_val)
+    if err_i < min_err
+      min_err = err_i
+      min_idx = i
+    end
+    vals[i] = div(vals[i], factor)
+  end
+
+  return min_idx
+end
+
+function getLSError(vals::AbstractArray, opt_val)
+
+  err = 0.0
+  for i=1:length(vals)
+    err_i = vals[i] - opt_val
+    err += err_i*err_i
+  end
+
+  return err
+end
+
+
+
 
 
 function resize_arr(arr::AbstractMatrix)

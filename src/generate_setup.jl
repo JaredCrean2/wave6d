@@ -17,7 +17,11 @@ function getMpiSetup(maxdim)
 # comm is a MPI communicator, N is the number of dimensions
 
 
-
+  str = "# This function performs an exhaustive search for the optimal"
+  str *= "# number of processors to assign to each dimension of an N"
+  str *= "# dimensional grid, where comm_size is the number of processors total"
+  str *= "# Note that this procedure is too slow to use in general, but is"
+  str *= "# for verification of a faster algorithm"
   str = "function getMPIMatches(comm_size::Integer, N::Integer)\n"
   str *= "# comm_size is the number of MPI ranks, N is the number of dimensions\n\n"
   indent = "  "
