@@ -9,6 +9,8 @@ type ParamType{N}
   ibs::Array{Int, 1}
   send_reqs::Array{MPI.Request, 1}
   recv_reqs::Array{MPI.Request, 1}
+  send_bufs::Array{Array{Float64, N}, 1}
+  recv_bufs::Array{Array{Float64, N}, 1}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
   nghost::Int
@@ -45,6 +47,16 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 
   send_reqs = Array(MPI.Request, 0)
   recv_reqs = Array(MPI.Request, 0)
+  send_bufs = Array(Array{Float64, N}, 2, N)
+  recv_bufs = Array(Array{Float64, N}, 2, N)
+  for i=1:N
+    # get local dimensions
+    # replace dimensions N with number of ghost points
+    send_bufs[1, i] = Array
+    send_bufs[2, i] = Array
+    recv_bufs[1, i] = Array
+    recv_bufs[2, i] = Array
+  end
   peernums = Array(Int, 0)
 
   # TODO update this when parallelizing
@@ -62,7 +74,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   end
 
   return ParamType{N}(delta_xs, deltax_invs2, comm, Ns_global, Ns_local, Ns_total_local,
-                      ias, ibs, send_reqs, recv_reqs, peernums, xLs, nghost, coords)
+                      ias, ibs, send_reqs, recv_reqs, send_bufs, recv_bufs, peernums, xLs, nghost, coords)
 end
 
 
