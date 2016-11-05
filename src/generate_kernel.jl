@@ -1,27 +1,35 @@
 # generate the spatial kernel for an n-dimensional wave equation solver
 
 
-function generate_kernel(maxdim, stencil, neq)
-
+function generate_kernel(maxdim, stencil, neq, prefix="")
+# maxdim is maximum dimension
+# stencil is the stencil (vector of strings that are the coefficients)
+# neq is the number of equations
+# prefix is prepended to the file name
   npts = length(stencil)
 
-  fname = string("kernel_", maxdim, "_", npts, ".jl")
-  println("creating file ", fname)
+  fname = prefix*string("kernel_", npts, ".jl")
+  println("generating file ", fname)
   f = open(fname, "w")
 
-  func_sig = getKernelSignature(maxdim, npts)
-  println(f, func_sig)
 
-  func_prologue = getKernelPrologue(maxdim)
-  func_prologue = indentString(2, func_prologue)
-  println(f, func_prologue)
+  for i=1:maxdim
+    func_sig = getKernelSignature(i, npts)
+    println(f, func_sig)
 
-  func_body = generate_body(maxdim, stencil, neq)
-  func_body = indentString(2, func_body)
-  println(f, func_body)
+    func_prologue = getKernelPrologue(i)
+    func_prologue = indentString(2, func_prologue)
+    println(f, func_prologue)
 
-  func_end = getKernelEpilogue()
-  println(f, func_end)
+    func_body = generate_body(i, stencil, neq)
+    func_body = indentString(2, func_body)
+    println(f, func_body)
+
+    func_end = getKernelEpilogue()
+    println(f, func_end)
+
+    println(f, "\n")
+  end
 
   close(f)
 
@@ -201,13 +209,13 @@ function getKernelAssembly(maxdim::Integer, src_eq::Integer, dest_eq::Integer)
   return str
 end
 
-function getKernelSignature(maxdim::Integer, npts::Integer)
+function getKernelSignature(dim::Integer, npts::Integer)
 # get the function signature
 
-  kernel_name = string("kernel_", maxdim)
-  array_typetag = string("::AbstractArray{T,", maxdim, "}")
+  kernel_name = string("kernel", npts)
+  array_typetag = string("::AbstractArray{T,", dim, "}")
 
-  str = string("function ", kernel_name, "{T}(params::ParamType{", maxdim, "},",
+  str = string("function ", kernel_name, "{T}(params::ParamType{", dim, "},",
                  " idx,\n")
   line_indent = " "^19
   str *= string(line_indent, "u_i", array_typetag, ", u_ip1", array_typetag, ")\n")
@@ -257,9 +265,9 @@ function indentString(indent::Integer, str::ASCIIString)
   return str
 end
 
-stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
-maxdim = 5
+#stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
+#maxdim = 5
 
-generate_kernel(maxdim, stencil, 2)
+#generate_kernel(maxdim, stencil, 2)
 #str = getStencil(maxdim, stencil, 2)
 #println("str = \n", str)

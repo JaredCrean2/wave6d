@@ -1,11 +1,12 @@
 # generate functions to copy data between MPI buffers (of dimensions N-1)
 # and the main array (of dimension N)
 
-function generate_buffers(nghost, Nmax)
+function generate_buffers(nghost, Nmax, prefix="")
 # nghost is the number of ghost cells on each interface
 # N is the maximum number of dimenions
+# prefix is prended to the file name
 
-  fname = string("buffers_", nghost, ".jl")
+  fname = prefix*string("buffers_", nghost, ".jl")
   println("generating file ", fname)
   f = open(fname, "w")
   for N=1:Nmax  # loop over maximum dimensions
@@ -225,4 +226,4 @@ function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
   return str
 end
 
-generate_buffers(2, 6)
+#generate_buffers(2, 6)

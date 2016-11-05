@@ -1,11 +1,12 @@
 # generate simple for loops for all dimensions
 
-function generate_loops(Nmax, npts)
+function generate_loops(Nmax, npts, prefix="")
 # Nmax is the maximum number of dimensions
 # npts is the number of points in the stencil (used to figure out the name of
 # the kernel to call)
+# prefix is prepended to the file name
 
-  fname = string("loops_", npts, ".jl")
+  fname = prefix*string("loops_", npts, ".jl")
   println("generating file ", fname)
   f = open(fname, "w")
   for i=1:Nmax
@@ -84,4 +85,4 @@ end
 
 
 
-generate_loops(6, 5)
+#generate_loops(6, 5)
