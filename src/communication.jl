@@ -1,5 +1,12 @@
 # do communication of ghost points
 
+global const TAG_SEND_UPPER = 1
+global const TAG_SEND_LOWER = 2
+global const TAG_RECEIVE_LOWER = TAG_SEND_UPPER
+global const TAG_RECEIVE_UPPER = TAG_SEND_LOWER
+global const SEND_TAGS = [TAG_SEND_LOWER, TAG_SEND_UPPER]
+global const RECV_TAGS = [TAG_RECV_LOWER, TAG_RECV_UPPER]
+
 function startComm{N}(params::ParamType{N}, u_arr)
 
   # copy data into send buffers
@@ -29,14 +36,14 @@ function startComm{N}(params::ParamType{N}, u_arr)
         # pedantic
         params.send_waited[j, i] = true
       end
-      send_req = MPI.Isend(send_buff_j, peer_j, MPI.ANY_TAG, params.comm)
+      send_req = MPI.Isend(send_buff_j, peer_j, SEND_TAGS[j], params.comm)
 
       if !recv_waited
         MPI.Wait!(recv_req)
         # pedantic
         params.recv_waited[j, i] = false
       end
-      recv_req = MPI.Irecv(recv_buff_j, peer_j, MPI.ANY_TAG, params.comm)
+      recv_req = MPI.Irecv(recv_buff_j, peer_j, RECV_TAGS[j], params.comm)
 
       params.send_reqs[j, i] = send_req
       params.send_waited[j, i] = false
