@@ -141,7 +141,7 @@ facts("----- testing getCartesianDecomposition -----") do
   @fact checkPermutiveEquality(x1, x2) --> true
 
   # check against exhaustive search
-  @time for i=1:256
+  @time for i=1:64
 #    println("i = ", i)
     cart1 = WaveSolver.getCartesianDecomposition(i, 3)
     cart2 = exhaustiveSearch(i, 3)
@@ -155,17 +155,20 @@ facts("----- testing getGridInfo -----") do
 
   dim_vec = WaveSolver.getCartesianDecomposition(1, 1)
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, 0)
+  peer_nums += 1
   @fact peer_nums --> ones(2, 1)
   @fact my_subs --> [1]
 
   dim_vec = WaveSolver.getCartesianDecomposition(2, 1)
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, 0)
+  peer_nums += 1
 
   exp_peernums = 2*ones(2, 1)
   @fact peer_nums --> exp_peernums
   @fact my_subs --> [1]
 
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, 1)
+  peer_nums += 1
   @fact peer_nums --> ones(2, 1)
   @fact my_subs --> [2]
 
@@ -173,6 +176,7 @@ facts("----- testing getGridInfo -----") do
   myrank = 0
   dim_vec = WaveSolver.getCartesianDecomposition(4, 2)
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, myrank)
+  peer_nums += 1
   println("dim_vec = ", dim_vec)
   println("peer_nums = ", peer_nums)
   println("my_subs = ", my_subs)
@@ -184,6 +188,7 @@ facts("----- testing getGridInfo -----") do
 
   myrank = 1
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, myrank)
+  peer_nums += 1
   exp_peer_nums[:, 1] = [1, 1]
   exp_peer_nums[:, 2] = [4, 4]
   @fact peer_nums --> exp_peer_nums
@@ -192,6 +197,7 @@ facts("----- testing getGridInfo -----") do
   println("\ntesting myrank = 2")
   myrank = 2
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, myrank)
+  peer_nums += 1
   exp_peer_nums[:, 1] = [4, 4]
   exp_peer_nums[:, 2] = [1, 1]
   @fact peer_nums --> exp_peer_nums
@@ -199,11 +205,114 @@ facts("----- testing getGridInfo -----") do
 
   myrank = 3
   peer_nums, my_subs = WaveSolver.getGridInfo(dim_vec, myrank)
+  peer_nums += 1
   exp_peer_nums[:, 1] = [3, 3]
   exp_peer_nums[:, 2] = [2, 2]
   @fact peer_nums --> exp_peer_nums
   @fact my_subs --> [2, 2]
 
+end
+
+facts("----- testing getNumPoints -----") do
+
+  my_subs = [1]
+  dim_vec = [1]
+  npoints = [20]
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+
+  npoints_global_exp = zeros(Int, 2, 1)
+  npoints_global_exp[1] = 1
+  npoints_global_exp[2] = 20
+  @fact local_points --> npoints
+  @fact global_points --> npoints_global_exp
+
+  # test with 2 processes
+  my_subs = [1]
+  dim_vec[1] = 2
+  npoints = [20]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  npoints_global_exp[1] = 1
+  npoints_global_exp[2] = 10
+
+  @fact local_points --> [10]
+  @fact global_points --> npoints_global_exp
+
+  my_subs[1] = 2
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  npoints_global_exp[1] = 11
+  npoints_global_exp[2] = 20
+
+  @fact local_points --> [10]
+  @fact global_points --> npoints_global_exp
+
+
+  # test with 4 processes in 4 dimensions
+  my_subs = [1, 1]
+  dim_vec = [2, 2]
+  npoints = [10, 10]
+  npoints_global_exp = zeros(Int, 2, 2)
+  npoints_local_exp = [5, 5]
+
+  npoints_global_exp[:, 1] = [1, 5]
+  npoints_global_exp[:, 2] = [1, 5]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
+
+  my_subs = [2, 1]
+  npoints_global_exp[:, 1] = [6, 10]
+  npoints_global_exp[:, 2] = [1, 5]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
+
+  my_subs = [1, 2]
+  npoints_global_exp[:, 1] = [1, 5]
+  npoints_global_exp[:, 2] = [6, 10]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
+
+  my_subs = [2, 2]
+  npoints_global_exp[:, 1] = [6, 10]
+  npoints_global_exp[:, 2] = [6, 10]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
+
+  # test non evenly divisible cases
+  my_subs = [1]
+  dim_vec = [2]
+  npoints = [9]
+  npoints_global_exp = zeros(Int, 2, 1)
+  npoints_local_exp = [5]
+
+  npoints_global_exp[:, 1] = [1, 5]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
+
+
+  my_subs = [2]
+  npoints_global_exp = zeros(Int, 2, 1)
+  npoints_local_exp = [4]
+
+  npoints_global_exp[:, 1] = [6, 9]
+
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  @fact local_points --> npoints_local_exp
+  @fact global_points --> npoints_global_exp
 
 
 

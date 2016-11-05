@@ -327,7 +327,8 @@ end
 
 
 """
-  Computes how many points are owned by this process in each dimension
+  Computes how many points are owned by this process in each dimension, and
+  the global numbers of the max and min point in each dimension.
 """
 function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector, 
                       Npoints::AbstractVector)
@@ -342,7 +343,7 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
 
     npoints_last = 0
     npoints_others = 0
-    if Npoints_i % nprocs_i = 0
+    if Npoints_i % nprocs_i == 0
       npoints_last = div(Npoints_i, nprocs_i)
       npoints_others = npoints_last
     elseif Npoints_i % (nprocs_i - 1) == 0
@@ -353,10 +354,15 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
 
       npoints_others -= 1
       npoints_last += nprocs_i - 1
-    else
-
+      npoints_others, npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last)
+    else 
+      # this is sub-optimial: should do do a search to see how many
+      #                       points the other processes can give up to
+      #                       get close to equality (approach from below)
       npoints_others = div(Npoints_i, nprocs_i - 1)
       npoints_last = Npoints_i - npoints_others
+
+      npoints_other_npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last)
     end
 
     if my_subs[i] == dim_vec[i]  # if I am the last process
@@ -367,11 +373,11 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
 
     # figure out global Nmin and Nmax (ignoring ghost points)
     sub_i = my_subs[i]
-    nmin_i = npoints_other*(sub_i - 1) + 1
+    nmin_i = npoints_others*(sub_i - 1) + 1
     if my_subs[i] == dim_vec[i]  # if I am the last process
       nmax_i = Npoints[i]
     else
-      nmax_i = npoints_other*sub_i
+      nmax_i = npoints_others*sub_i
     end
 
     global_points[1, i] = nmin_i
@@ -387,5 +393,63 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
   return local_points, global_points
 end
 
+"""
+  Figure out how many points the last process should have for decent
+  load balance, meaning the last process has <= the number of points
+  as the other processes.
+  Optimal load balancing would require (possibly) assigning a different
+  number of nodes to each process, rather than just the first and the last.
+  For the moment, I decline to implement that algorithm.
 
+  This function might not work correctly if the
+  total number of points is evenly divisible by th number of processors,
+  but in that case the solution is analytically known
+
+  Inputs:
+    nprocs_other: the total number of processes minus 1
+    npoints_other: initial guess for number of points on each process in
+                   nprocs_other
+    npoints_last: initial guess for number of points assigned to last 
+                  process
+
+  Note that the initial guess should assign <= the optimal number of points
+  the last process.  This accelerates convergence of the algorithm.
+  Also, nprocs_other*npoints_other + npoints_last should equal the
+  total number of points
+
+  Outputs:
+    npoints_other_ret: optimal number of points for nprocs_other to have
+    npoitns_last_ret: optimal number of points for last process to have
+"""
+function findBalance(nprocs_other, npoints_other, npoints_last)
+
+  npoints_other_ret = npoints_other
+  npoints_last_ret = npoints_last
+
+  if npoints_last > npoints_other + nprocs_other
+    throw(ErrorException("invalid initial guess"))
+  end
+
+  # accept load imbalance to ensure the last process has at least 1 point
+  foundmatch = false
+
+  while !foundmatch  # evil while loop
+    npoints_other_ret -= 1
+    npoints_last_ret += nprocs_other
+
+    # stop when we cross the threshold into load imbalance
+    if npoints_last_ret > npoints_other_ret
+      foundmatch = true
+    end
+  end
+
+  # accept load imbalance to ensure last process has at least 1 point
+  if npoints_last_ret > nprocs_other
+    # back up one iteration
+    npoints_other_ret += 1
+    npoints_last_ret -= nprocs_other
+  end
+
+  return npoints_other_ret, npoints_last_ret
+end
 
