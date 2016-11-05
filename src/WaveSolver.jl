@@ -58,11 +58,12 @@ function runcase(fname::ASCIIString)
   u_i = Array(Float64, params.Ns_local...)
 
   # apply IC
+  IC1(params, u_i)
 
   # timestep
   tfinal = rk4(step, tmax, u_i, params)
 
-
+  calcErr1(params, u_i, tfinal)
 
 
 end

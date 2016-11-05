@@ -19,7 +19,7 @@ end
 function getCalcErrFunction(dim::Integer)
 
   str = ""
-  str *= "function calcErr1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dim})\n"
+  str *= "function calcErr1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dim}, t)\n"
 
   str *= "\n"
   indent = "  "
