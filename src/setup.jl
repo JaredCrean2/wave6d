@@ -1,6 +1,7 @@
 type ParamType{N}
   delta_xs::Array{Float64, 1}
   deltax_invs2::Array{Float64, 1}
+  delta_t::Float64
   comm::MPI.Comm
   comm_rank::Int
   comm_subs::Int
@@ -53,6 +54,8 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     N_i = Ns[i]
     delta_xs[i] = (xmax - xmin)/(N_i - 1)
   end
+  CFL = 0.5
+  delta_t = getDeltaT(delta_xs, CFL)
 
   delta_xinvs2 = 1./(delta_xs.^2)
 
@@ -87,7 +90,10 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     coords[i] = coords_global[local_range]
   end
 
-  return ParamType{N}(delta_xs, deltax_invs2, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local,
+  # calculate delta_t from a CFL number
+  CFL = 0.5
+
+  return ParamType{N}(delta_xs, deltax_invs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local,
                       ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
 end
 
@@ -451,5 +457,18 @@ function findBalance(nprocs_other, npoints_other, npoints_last)
   end
 
   return npoints_other_ret, npoints_last_ret
+end
+
+"""
+  Calculate delta_t for a given CFL number
+"""
+function getDeltaT(delta_xs, CFL)
+
+  val = 0.0
+  for i=1:length(delta_xs)
+    val += 1/delta_xs[i]
+  end
+
+  return CFL/val
 end
 
