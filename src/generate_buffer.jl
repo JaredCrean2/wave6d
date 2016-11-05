@@ -31,7 +31,7 @@ function generateFunction(nghost, N, forward=true)
   end
   # write function signature
   str = ""
-  str *= "function $fname(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
+  str *= "function $fname{T}(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
   str *= "# copy ghost values from u_arr to buff\n"
   str *= "# dir specifies the direction to copy, (must be in the range 1:N\n"
   str *= "# isupper tells whether to copy the values for the maximum indices\n"
