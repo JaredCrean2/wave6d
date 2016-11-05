@@ -7,6 +7,7 @@ type ParamType{N}
   my_subs::Array{Int, 1}  # my location in the grid
   Ns_global::Array{Int, 1}  # number of regular grid points in each direction
   Ns_local::Array{Int, 1}
+  Ns_local_global::Array{Int, 1}  # global indices of local grid points
   Ns_total_local::Array{Int, 1}  # number to regular grid points + ghosts in each direction
   ias::Array{Int, 1}
   ibs::Array{Int, 1}
@@ -32,7 +33,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   comm_rank = MPI.Comm_ranks(comm)
   cart_decomp  = getCartesianDecomposition(comm_size, N)
   peer_nums, my_subs = getGridInfo(cart_decomp, comm_rank)
-  Ns_local = getNumPoints(my_subs, cart_decomp, Ns_global)
+  Ns_local, Ns_local_global = getNumPoints(my_subs, cart_decomp, Ns_global)
 
   Ns_total_local = Ns_local + 2*nghost
 
@@ -70,21 +71,17 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     recv_bufs[2, i] = Array(Float64, dims_i...)
   end
 
-  # TODO update this when parallelizing
   coords = Array(LinSpace{Float64}, N)
   for i=1:N
-    xmin = xls[1, i]
+    xmin = xLs[1, i]
     xmax = xLs[2, i]
     delta_x = delta_xs[i]
-    Ntot = Ns_total_local[i]
-
-    xmin = xmin - nghost*delta_x
-    xmax = xmax + nghost*delta_x
-
-    coords[i] = linspace(xmin, xmax, Ntot)
+    coords_global = linspace(xmin, xmax, Ns_global[i])
+    local_range = Ns_local_global[1, i]:Ns_local_global[2, i]
+    coords[i] = coords_global[local_range]
   end
 
-  return ParamType{N}(delta_xs, deltax_invs2, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_total_local,
+  return ParamType{N}(delta_xs, deltax_invs2, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local,
                       ias, ibs, send_reqs, recv_reqs, send_bufs, recv_bufs, peernums, cart_decomp,  xLs, nghost, coords)
 end
 
@@ -332,6 +329,7 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
 
   N = length(my_subs)
   local_points = zeros(Int, N)
+  global_points = Array(Int, 2, N)
 
   for i=1:N
     Npoints_i = Npoints[i] # number of points along this axis
@@ -362,6 +360,18 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
       local_points[i] = npoints_others
     end
 
+    # figure out global Nmin and Nmax (ignoring ghost points)
+    sub_i = my_subs[i]
+    nmin_i = npoints_other*(sub_i - 1) + 1
+    if my_subs[i] == dim_vec[i]  # if I am the last process
+      nmax_i = Npoints[i]
+    else
+      nmax_i = npoints_other*sub_i
+    end
+
+    global_points[1, i] = nmin_i
+    global_points[2, i] = nmax_i
+
     if my_subs == ones(N)  && npoints_last > npoints_others  # first process
       println("Warning: load imbalance in dimension ", i, ", npoints_others = ", npoints_others, ", npoints_last = ", npoints_last)
     end
@@ -369,7 +379,7 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
   end  # end loop
 
 
-  return local_points
+  return local_points, global_points
 end
 
 
