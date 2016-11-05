@@ -48,7 +48,11 @@ function generateFunction(nghost, N, forward=true)
   str *= indent*"if isupper\n"
   indent *= "  "
   ngm1 = nghost - 1
-  str *= indent*"dfixed1 = params.ibs[dir] - $ngm1\n"
+  if forward
+    str *= indent*"dfixed1 = params.ibs[dir] - $ngm1\n"
+  else
+    str *= indent*"dfixed1 = params.ibs[dir] + 1\n"
+  end
   for i=2:nghost
     im1 = i - 1
     str *= indent*"dfixed$i = dfixed$im1 + 1\n"
@@ -56,7 +60,11 @@ function generateFunction(nghost, N, forward=true)
   indent = indent[1:end-2]
   str *= indent*"else\n"
   indent *= "  "
-  str *= indent*"dfixed1 = params.ias[dir]\n"
+  if forward
+    str *= indent*"dfixed1 = params.ias[dir]\n"
+  else
+    str *= indent*"dfixed1 = 1\n"
+  end
   for i=2:nghost
     im1 = i - 1
     str *= indent*"dfixed$i = dfixed$im1 + 1\n"

@@ -2,6 +2,9 @@ type ParamType{N}
   delta_xs::Array{Float64, 1}
   deltax_invs2::Array{Float64, 1}
   comm::MPI.Comm
+  comm_rank::Int
+  comm_subs::Int
+  my_subs::Array{Int, 1}  # my location in the grid
   Ns_global::Array{Int, 1}  # number of regular grid points in each direction
   Ns_local::Array{Int, 1}
   Ns_total_local::Array{Int, 1}  # number to regular grid points + ghosts in each direction
@@ -12,6 +15,7 @@ type ParamType{N}
   send_bufs::Array{Array{Float64, N}, 1}
   recv_bufs::Array{Array{Float64, N}, 1}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
+  cart_decomp::Array{Int, 1}  # process grid dimensions
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
   nghost::Int
   coords::Array{LinSpace{Float64}, 1}
@@ -23,12 +27,16 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 # Ns = number of grid points (not including ghosts
 # xls = 2 x ndim array of xmin and xmax for each dimension
 
-  Ns_local = copy(Ns_global)  # change when parallelizing
+  comm = MPI.COMM_WORLD
+  comm_size = MPI.Comm_size(comm)
+  comm_rank = MPI.Comm_ranks(comm)
+  cart_decomp  = getCartesianDecomposition(comm_size, N)
+  peer_nums, my_subs = getGridInfo(cart_decomp, comm_rank)
+  Ns_local = getNumPoints(my_subs, cart_decomp, Ns_global)
+
   Ns_total_local = Ns_local + 2*nghost
 
-  N = length(Ns_global)
-  comm = MPI.COMM_WORLD
-
+#  N = length(Ns_global)
   ias = nghost*ones(N) + 1
   ibs = zeros(ias)
   for i=1:N
@@ -45,19 +53,22 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 
   delta_xinvs2 = 1./(delta_xs.^2)
 
-  send_reqs = Array(MPI.Request, 0)
-  recv_reqs = Array(MPI.Request, 0)
+  send_reqs = Array(MPI.Request, 2, N)
+  recv_reqs = Array(MPI.Request, 2, N)
   send_bufs = Array(Array{Float64, N}, 2, N)
   recv_bufs = Array(Array{Float64, N}, 2, N)
+  dims_i = copy(Ns_total_local)
   for i=1:N
     # get local dimensions
     # replace dimensions N with number of ghost points
-    send_bufs[1, i] = Array
-    send_bufs[2, i] = Array
-    recv_bufs[1, i] = Array
-    recv_bufs[2, i] = Array
+    copy!(dims_i, Ns_total_local)
+    dims_i[i] = nghost
+
+    send_bufs[1, i] = Array(Float64, dims_i...)
+    send_bufs[2, i] = Array(Float64, dims_i...)
+    recv_bufs[1, i] = Array(Float64, dims_i...)
+    recv_bufs[2, i] = Array(Float64, dims_i...)
   end
-  peernums = Array(Int, 0)
 
   # TODO update this when parallelizing
   coords = Array(LinSpace{Float64}, N)
@@ -73,8 +84,8 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     coords[i] = linspace(xmin, xmax, Ntot)
   end
 
-  return ParamType{N}(delta_xs, deltax_invs2, comm, Ns_global, Ns_local, Ns_total_local,
-                      ias, ibs, send_reqs, recv_reqs, send_bufs, recv_bufs, peernums, xLs, nghost, coords)
+  return ParamType{N}(delta_xs, deltax_invs2, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_total_local,
+                      ias, ibs, send_reqs, recv_reqs, send_bufs, recv_bufs, peernums, cart_decomp,  xLs, nghost, coords)
 end
 
 
@@ -126,7 +137,7 @@ end
 
   I believe the algorithm produces the optimal decomposition of the processes
   into an N dimesnional grid, although I cannot formally prove it does.
-  Comparison to n exhaustive search of the 1 to 500 processes in 3 dimensions
+  Comparison to an exhaustive search of the 1 to 500 processes in 3 dimensions
   shows identical results.
 
 """
