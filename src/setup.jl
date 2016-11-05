@@ -11,10 +11,12 @@ type ParamType{N}
   Ns_total_local::Array{Int, 1}  # number to regular grid points + ghosts in each direction
   ias::Array{Int, 1}
   ibs::Array{Int, 1}
-  send_reqs::Array{MPI.Request, 1}
-  recv_reqs::Array{MPI.Request, 1}
-  send_bufs::Array{Array{Float64, N}, 1}
-  recv_bufs::Array{Array{Float64, N}, 1}
+  send_waited::Array{Bool, 2}
+  recv_waited::Array{Bool, 2}
+  send_reqs::Array{MPI.Request, 2}
+  recv_reqs::Array{MPI.Request, 2}
+  send_bufs::Array{Array{Float64, N}, 2}
+  recv_bufs::Array{Array{Float64, N}, 2}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
   cart_decomp::Array{Int, 1}  # process grid dimensions
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
@@ -58,6 +60,10 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   recv_reqs = Array(MPI.Request, 2, N)
   send_bufs = Array(Array{Float64, N}, 2, N)
   recv_bufs = Array(Array{Float64, N}, 2, N)
+  send_waited = Array(Bool, 2, N)
+  recv_waited = Array(Bool, 2, N)
+  fill!(send_waited, true)  # initialized to already waited
+  fill!(recv_waited, true)
   dims_i = copy(Ns_total_local)
   for i=1:N
     # get local dimensions
@@ -82,7 +88,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   end
 
   return ParamType{N}(delta_xs, deltax_invs2, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local,
-                      ias, ibs, send_reqs, recv_reqs, send_bufs, recv_bufs, peernums, cart_decomp,  xLs, nghost, coords)
+                      ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
 end
 
 
@@ -315,9 +321,8 @@ function getGridInfo(dim_vec::AbstractVector, comm_rank)
     peer_nums[2, i] = right_rank
   end
 
-  # should do dim = dim - 1 to convert to zero based process numbers that
-  # MPI uses
-  return peer_nums, my_subs
+  # convert peer_nums to 0 based
+  return peer_nums - 1, my_subs
 end
 
 
