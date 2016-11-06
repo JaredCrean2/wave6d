@@ -102,12 +102,13 @@ end
 
 function step(params::ParamType, u_i, u_ip1, t)
 # single timestep
+#  println(params.f, "----- entered step -----")
   params.t = t
-#  println("u initial = \n", u_i)
+#  println(params.f, "u initial = \n", u_i)
   startComm(params, u_i)
   finishComm(params, u_i)
 
-#  println("after comm u = \n", u_i)
+#  println(params.f, "after comm u = \n", u_i)
 
   simpleLoop5(params, u_i, u_ip1)
 #  println("u_ip1 = \n", u_ip1)

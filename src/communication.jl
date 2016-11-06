@@ -19,6 +19,7 @@ function startComm{N}(params::ParamType{N}, u_arr)
       recv_waited = params.recv_waited[j, i]
       send_req = params.send_reqs[j, i]
       recv_req = params.recv_reqs[j, i]
+      isperiodic = params.periodic_flags[j, i]
 
       if j == 1
         isupper = false
@@ -27,7 +28,7 @@ function startComm{N}(params::ParamType{N}, u_arr)
       end
 
       #TODO: optimize the case where peer_j = myrank
-      copyToBuffer(params, u_arr, send_buf_j, i, isupper)
+      copyToBuffer(params, u_arr, send_buf_j, i, isupper, isperiodic)
 
       # must wait for previous communication with peer to finish, because
       # MPI does not guarantee order of arrival
@@ -84,13 +85,4 @@ function finishComm{N}(params::ParamType{N}, u_arr)
   return nothing
 end
 
-
-
-
-
-
-
-
-
-    
 

@@ -215,10 +215,11 @@ end
 
 facts("----- testing getNumPoints -----") do
 
+  nghost = 2
   my_subs = [1]
   dim_vec = [1]
   npoints = [20]
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
 
   npoints_global_exp = zeros(Int, 2, 1)
   npoints_global_exp[1] = 1
@@ -231,7 +232,7 @@ facts("----- testing getNumPoints -----") do
   dim_vec[1] = 2
   npoints = [20]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
   npoints_global_exp[1] = 1
   npoints_global_exp[2] = 10
 
@@ -240,7 +241,7 @@ facts("----- testing getNumPoints -----") do
 
   my_subs[1] = 2
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
   npoints_global_exp[1] = 11
   npoints_global_exp[2] = 20
 
@@ -258,7 +259,7 @@ facts("----- testing getNumPoints -----") do
   npoints_global_exp[:, 1] = [1, 5]
   npoints_global_exp[:, 2] = [1, 5]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
 
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
@@ -267,7 +268,7 @@ facts("----- testing getNumPoints -----") do
   npoints_global_exp[:, 1] = [6, 10]
   npoints_global_exp[:, 2] = [1, 5]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
 
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
@@ -276,7 +277,7 @@ facts("----- testing getNumPoints -----") do
   npoints_global_exp[:, 1] = [1, 5]
   npoints_global_exp[:, 2] = [6, 10]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
 
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
@@ -285,7 +286,7 @@ facts("----- testing getNumPoints -----") do
   npoints_global_exp[:, 1] = [6, 10]
   npoints_global_exp[:, 2] = [6, 10]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
 
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
@@ -299,7 +300,7 @@ facts("----- testing getNumPoints -----") do
 
   npoints_global_exp[:, 1] = [1, 5]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
 
@@ -310,7 +311,7 @@ facts("----- testing getNumPoints -----") do
 
   npoints_global_exp[:, 1] = [6, 9]
 
-  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints)
+  local_points, global_points = WaveSolver.getNumPoints(my_subs, dim_vec, npoints, nghost)
   @fact local_points --> npoints_local_exp
   @fact global_points --> npoints_global_exp
 

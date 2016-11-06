@@ -84,10 +84,12 @@ function getu_arr(dim::Integer, eq::Integer)
 # get u_arr[d1, d2, ...]
 # eq is the equation number
 
+# remember ot reverse order of indices
+
   # function evaluation
   str_inner = "u_arr[ "
   for i=1:dim
-    var = string("d", i)
+    var = string("d", dim - i + 1)
     str_inner *= var*", "
   end
 

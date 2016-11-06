@@ -5,7 +5,7 @@ type ParamType{N, N2}  # N2 = N + 1
   delta_t::Float64
   comm::MPI.Comm
   comm_rank::Int
-  comm_subs::Int
+  comm_size::Int
   my_subs::Array{Int, 1}  # my location in the grid
   Ns_global::Array{Int, 1}  # number of regular grid points in each direction
   Ns_local::Array{Int, 1}
@@ -20,10 +20,11 @@ type ParamType{N, N2}  # N2 = N + 1
   send_bufs::Array{Array{Float64, N2}, 2}
   recv_bufs::Array{Array{Float64, N2}, 2}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
+  periodic_flags::Array{Bool, 2}
   cart_decomp::Array{Int, 1}  # process grid dimensions
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
   nghost::Int
-  coords::Array{LinSpace{Float64}, 1}a
+  coords::Array{LinSpace{Float64}, 1}
   f::IO
 end
 
@@ -39,7 +40,9 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   comm_rank = MPI.Comm_rank(comm)
   cart_decomp  = getCartesianDecomposition(comm_size, N)
   peer_nums, my_subs = getGridInfo(cart_decomp, comm_rank)
-  Ns_local, Ns_local_global = getNumPoints(my_subs, cart_decomp, Ns_global)
+  Ns_local, Ns_local_global = getNumPoints(my_subs, cart_decomp, Ns_global, nghost)
+
+  checkDimensions(cart_decomp, Ns_local, comm_rank, nghost)
 
   if debug
     fname = string("fout_", comm_rank, ".dat")
@@ -101,8 +104,37 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     coords[i] = coords_global[local_range]
   end
 
+  periodic_flags = getPeriodic(my_subs, cart_decomp, comm_rank, peer_nums)
+
   t = 0.0
-  return ParamType{N, N+1}(t, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords, f)
+  return ParamType{N, N+1}(t, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, f)
+end
+
+
+function checkDimensions(cart_decomp, Ns_local, myrank, nghost)
+
+  dims = (cart_decomp...)
+  my_subs = ind2sub(dims, myrank+1)
+  N = length(cart_decomp)
+
+  ngp1 = nghost + 1
+  for i=1:N
+    sub_i = my_subs[i]
+    max_sub = dims[i]
+    N_i = Ns_local[i]
+
+    # periodic dimensions need at least 3 points
+    if (sub_i == 1 || sub_i == max_sub) && N_i < ngp1
+      throw(ErrorException("process $my_subs (rank $myrank) must have at least $ngp1 points in dimension $i, has $N_i"))
+    elseif N_i < nghost
+      throw(ErrorException("process $my_subs (ranks $myrank) must have at least $nghost point in dimension $i, has $N_i"))
+    end
+
+  end
+
+  MPI.Barrier(MPI.COMM_WORLD)  # prevent other processes from mvoing forward
+
+  return nothing
 end
 
 
@@ -345,7 +377,7 @@ end
   the global numbers of the max and min point in each dimension.
 """
 function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector, 
-                      Npoints::AbstractVector)
+                      Npoints::AbstractVector, nghost::Integer)
 
   N = length(my_subs)
   local_points = zeros(Int, N)
@@ -368,7 +400,7 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
 
       npoints_others -= 1
       npoints_last += nprocs_i - 1
-      npoints_others, npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last)
+      npoints_others, npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last, nghost)
     else 
       # this is sub-optimial: should do do a search to see how many
       #                       points the other processes can give up to
@@ -376,7 +408,7 @@ function getNumPoints(my_subs::AbstractVector, dim_vec::AbstractVector,
       npoints_others = div(Npoints_i, nprocs_i - 1)
       npoints_last = Npoints_i - npoints_others
 
-      npoints_other_npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last)
+      npoints_other_npoints_last = findBalance(nprocs_i - 1, npoints_others, npoints_last, nghost)
     end
 
     if my_subs[i] == dim_vec[i]  # if I am the last process
@@ -433,9 +465,9 @@ end
 
   Outputs:
     npoints_other_ret: optimal number of points for nprocs_other to have
-    npoitns_last_ret: optimal number of points for last process to have
+    npoints_last_ret: optimal number of points for last process to have
 """
-function findBalance(nprocs_other, npoints_other, npoints_last)
+function findBalance(nprocs_other, npoints_other, npoints_last, nghost)
 
   npoints_other_ret = npoints_other
   npoints_last_ret = npoints_last
@@ -457,11 +489,19 @@ function findBalance(nprocs_other, npoints_other, npoints_last)
     end
   end
 
+  # take one step back, but
   # accept load imbalance to ensure last process has at least 1 point
   if npoints_last_ret > nprocs_other
     # back up one iteration
     npoints_other_ret += 1
     npoints_last_ret -= nprocs_other
+  end
+
+  # also accept load imbalance to ensure last process has at least nghost + 1
+  # but only if that won't make the first process have fewer than nghost - 1 
+  if npoints_last_ret < nghost + 1  && npoints_other_ret > nghost + 1
+    npoints_last_ret += nprocs_other
+    npoints_other_ret -= 1
   end
 
   return npoints_other_ret, npoints_last_ret
@@ -479,4 +519,48 @@ function getDeltaT(delta_xs, CFL)
 
   return CFL/val
 end
+
+function getPeriodic(my_subs, cart_decomp, my_rank, peernums)
+
+  N = length(my_subs)
+
+  periodic_arr = Array(Bool, 2, N)
+  for i=1:N
+    for j=1:2
+      periodic_arr[j, i] = getIsPeriodic(my_subs, cart_decomp, my_rank, i, j, peernums[j, i])
+    end
+  end
+
+  return periodic_arr
+end
+
+function getIsPeriodic(my_subs, cart_decomp, comm_rank, dir::Integer, side::Integer, peernum::Integer)
+# figure out of this is a periodic interface or a regular one
+# dir is the direction, side = 1 is lower, side = 2 is upper
+  axis_subs = copy(my_subs) 
+  axis_subs[dir] = 1
+  dims = (cart_decomp...)
+
+  # get comm ranks of maximum, minimum process on this axis
+  min_peernum = sub2ind(dims, axis_subs...) - 1
+
+  axis_subs[dir] = cart_decomp[dir]
+  max_peernum = sub2ind(dims, axis_subs...) - 1
+
+  is_periodic = false
+
+  if side == 1 # lower
+    if comm_rank == min_peernum && peernum == max_peernum
+      is_periodic = true
+    end
+  else
+    if comm_rank == max_peernum && peernum == min_peernum
+      is_periodic = true
+    end
+  end
+
+  return is_periodic
+end
+
+
 

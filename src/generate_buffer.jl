@@ -31,8 +31,15 @@ function generateFunction(nghost, N, forward=true)
   end
   # write function signature
   np1 = N + 1
+
+  if forward
+    last_arg = ", isperiodic::Bool"
+  else
+    last_arg = ""
+  end
+
   str = ""
-  str *= "function $fname{T}(params::ParamType{$N}, u_arr::AbstractArray{T, $np1},\n           buff::AbstractArray{T, $np1}, dir::Integer, isupper::Bool)\n"
+  str *= "function $fname{T}(params::ParamType{$N}, u_arr::AbstractArray{T, $np1},\n           buff::AbstractArray{T, $np1}, dir::Integer, isupper::Bool $last_arg)\n"
   str *= "# copy ghost values from u_arr to buff\n"
   str *= "# dir specifies the direction to copy, (must be in the range 1:N\n"
   str *= "# isupper tells whether to copy the values for the maximum indices\n"
@@ -51,10 +58,10 @@ function generateFunction(nghost, N, forward=true)
   # isupper case
   str *= indent*"if isupper\n"
   indent *= "  "
-#  ngm1 = nghost - 1
+  ngm1 = nghost - 1
   # only the starting point differes for forward and reverse
   if forward
-    str *= indent*"dfixed1 = params.ibs[dir] - $nghost\n"
+    str *= indent*"dfixed1 = params.ibs[dir] - $ngm1\n"
   else
     str *= indent*"dfixed1 = params.ibs[dir] + 1\n"
   end
@@ -72,7 +79,7 @@ function generateFunction(nghost, N, forward=true)
 
   # only the starting point differs for forward and reverse
   if forward
-    str *= indent*"dfixed1 = params.ias[dir] + 1\n"
+    str *= indent*"dfixed1 = params.ias[dir]\n"
   else
     str *= indent*"dfixed1 = 1\n"
   end
@@ -83,6 +90,35 @@ function generateFunction(nghost, N, forward=true)
   end
   indent = indent[1:end-2]
   str *= indent*"end\n"
+
+
+  # if this is a periodic interface, adjust indices
+  # only needed for copy into buffer
+  if forward 
+    str *= "\n"
+
+    # figure out the adjustment
+    str *= indent*"if isperiodic\n"
+    indent *= "  "
+    str *= indent*"if isupper\n"
+    indent *= "  "
+    str *= indent*"adjust = -1\n"
+    indent = indent[1:end-2]
+    str *= indent*"else\n"
+    indent *= "  "
+    str *= indent*"adjust = 1\n"
+    indent = indent[1:end-2]
+    str *= indent*"end\n"
+    # apply adjustment to all
+    for i=1:nghost
+      varname = string("dfixed", i)
+      str *= indent*varname*" += adjust\n"
+    end
+
+    indent = indent[1:end-2]
+    str *= indent*"end\n"
+  end
+
 
   str *= "\n\n"
   for dim=1:N  # loop over excluded dimensions
