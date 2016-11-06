@@ -1,6 +1,6 @@
 include("generate_input.jl")
 
-arr = ["10", "1.0", "1", "1"]
+arr = ["10", "1.0", "3", "1"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -25,3 +25,4 @@ for i=1:5
 end
 
 MPI.Finalize()
+include("calcratio.jl")

@@ -44,7 +44,7 @@ function getICFunction(dim::Integer)
     str *= indent*"for "*var1*" = "*var2*":"*var3*"\n"
     indent *= "  "
     # get coordinate
-    idx = dim - 1 + i
+    idx = dim - i + 1
     str *= indent*"x$i = params.coords[ $idx ][ $var1 ]\n"
   end
 
