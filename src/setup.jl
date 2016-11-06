@@ -1,4 +1,4 @@
-type ParamType{N}
+type ParamType{N, N2}  # N2 = N + 1
   delta_xs::Array{Float64, 1}
   deltax_invs2::Array{Float64, 1}
   delta_t::Float64
@@ -8,7 +8,7 @@ type ParamType{N}
   my_subs::Array{Int, 1}  # my location in the grid
   Ns_global::Array{Int, 1}  # number of regular grid points in each direction
   Ns_local::Array{Int, 1}
-  Ns_local_global::Array{Int, 1}  # global indices of local grid points
+  Ns_local_global::Array{Int, 2}  # global indices of local grid points
   Ns_total_local::Array{Int, 1}  # number to regular grid points + ghosts in each direction
   ias::Array{Int, 1}
   ibs::Array{Int, 1}
@@ -16,8 +16,8 @@ type ParamType{N}
   recv_waited::Array{Bool, 2}
   send_reqs::Array{MPI.Request, 2}
   recv_reqs::Array{MPI.Request, 2}
-  send_bufs::Array{Array{Float64, N}, 2}
-  recv_bufs::Array{Array{Float64, N}, 2}
+  send_bufs::Array{Array{Float64, N2}, 2}
+  recv_bufs::Array{Array{Float64, N2}, 2}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
   cart_decomp::Array{Int, 1}  # process grid dimensions
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
@@ -31,9 +31,11 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 # Ns = number of grid points (not including ghosts
 # xls = 2 x ndim array of xmin and xmax for each dimension
 
+  N = length(Ns_global)
   comm = MPI.COMM_WORLD
+  MPI.Init()
   comm_size = MPI.Comm_size(comm)
-  comm_rank = MPI.Comm_ranks(comm)
+  comm_rank = MPI.Comm_rank(comm)
   cart_decomp  = getCartesianDecomposition(comm_size, N)
   peer_nums, my_subs = getGridInfo(cart_decomp, comm_rank)
   Ns_local, Ns_local_global = getNumPoints(my_subs, cart_decomp, Ns_global)
@@ -51,7 +53,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   for i=1:N
     xmin = xLs[1, i]
     xmax = xLs[2, i]
-    N_i = Ns[i]
+    N_i = Ns_global[i]
     delta_xs[i] = (xmax - xmin)/(N_i - 1)
   end
   CFL = 0.5
@@ -59,19 +61,20 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 
   delta_xinvs2 = 1./(delta_xs.^2)
 
-  send_reqs = Array(MPI.Request, 2, N)
-  recv_reqs = Array(MPI.Request, 2, N)
-  send_bufs = Array(Array{Float64, N}, 2, N)
-  recv_bufs = Array(Array{Float64, N}, 2, N)
+  send_reqs = Array(MPI.Request, 2, N); fill!(send_reqs, MPI.REQUEST_NULL)
+  recv_reqs = Array(MPI.Request, 2, N); fill!(recv_reqs, MPI.REQUEST_NULL)
+  send_bufs = Array(Array{Float64, N+1}, 2, N)
+  recv_bufs = Array(Array{Float64, N+1}, 2, N)
   send_waited = Array(Bool, 2, N)
   recv_waited = Array(Bool, 2, N)
   fill!(send_waited, true)  # initialized to already waited
   fill!(recv_waited, true)
-  dims_i = copy(Ns_total_local)
+  dims_i = zeros(Int, N+1)
+  dims_i[end] = 2
   for i=1:N
     # get local dimensions
     # replace dimensions N with number of ghost points
-    copy!(dims_i, Ns_total_local)
+    dims_i[1:end-1] = Ns_total_local
     dims_i[i] = nghost
 
     send_bufs[1, i] = Array(Float64, dims_i...)
@@ -80,21 +83,18 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     recv_bufs[2, i] = Array(Float64, dims_i...)
   end
 
+  println("Ns_local_global = \n", Ns_local_global)
   coords = Array(LinSpace{Float64}, N)
   for i=1:N
     xmin = xLs[1, i]
     xmax = xLs[2, i]
     delta_x = delta_xs[i]
-    coords_global = linspace(xmin, xmax, Ns_global[i])
-    local_range = Ns_local_global[1, i]:Ns_local_global[2, i]
+    coords_global = linspace(xmin - nghost*delta_x, xmax + nghost*delta_x, Ns_global[i] + 2*nghost)
+    local_range = ((Ns_local_global[1, i]-nghost):((Ns_local_global[2, i] + nghost))) + nghost
     coords[i] = coords_global[local_range]
   end
 
-  # calculate delta_t from a CFL number
-  CFL = 0.5
-
-  return ParamType{N}(delta_xs, deltax_invs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local,
-                      ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
+  return ParamType{N, N+1}(delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
 end
 
 

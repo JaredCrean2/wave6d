@@ -39,7 +39,7 @@ function getICFunction(dim::Integer)
   for i=1:dim
     var1 = string("d", i)
     var2 = var1*"min"
-    var3 = var2*"max"
+    var3 = var1*"max"
     str *= indent*"for "*var1*" = "*var2*":"*var3*"\n"
     indent *= "  "
     # get coordinate

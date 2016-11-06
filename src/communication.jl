@@ -2,13 +2,16 @@
 
 global const TAG_SEND_UPPER = 1
 global const TAG_SEND_LOWER = 2
-global const TAG_RECEIVE_LOWER = TAG_SEND_UPPER
-global const TAG_RECEIVE_UPPER = TAG_SEND_LOWER
+global const TAG_RECV_LOWER = TAG_SEND_UPPER
+global const TAG_RECV_UPPER = TAG_SEND_LOWER
 global const SEND_TAGS = [TAG_SEND_LOWER, TAG_SEND_UPPER]
 global const RECV_TAGS = [TAG_RECV_LOWER, TAG_RECV_UPPER]
 
 function startComm{N}(params::ParamType{N}, u_arr)
 
+  println("params.send_bufs = \n", params.send_bufs)
+  println("params.recv_bufs = \n", params.recv_bufs)
+  println("params.send_reqs = \n", params.send_reqs)
   # copy data into send buffers
   for i=1:N
     for j=1:2  # upper and lower directions
@@ -27,7 +30,7 @@ function startComm{N}(params::ParamType{N}, u_arr)
       end
 
       #TODO: optimize the case where peer_j = myrank
-      copyToBuffer(params, u_arr, send_buff_j i, isupper)
+      copyToBuffer(params, u_arr, send_buf_j, i, isupper)
 
       # must wait for previous communication with peer to finish, because
       # MPI does not guarantee order of arrival
@@ -36,14 +39,14 @@ function startComm{N}(params::ParamType{N}, u_arr)
         # pedantic
         params.send_waited[j, i] = true
       end
-      send_req = MPI.Isend(send_buff_j, peer_j, SEND_TAGS[j], params.comm)
+      send_req = MPI.Isend(send_buf_j, peer_j, SEND_TAGS[j], params.comm)
 
       if !recv_waited
         MPI.Wait!(recv_req)
         # pedantic
         params.recv_waited[j, i] = false
       end
-      recv_req = MPI.Irecv(recv_buff_j, peer_j, RECV_TAGS[j], params.comm)
+      recv_req = MPI.Irecv!(recv_buf_j, peer_j, RECV_TAGS[j], params.comm)
 
       params.send_reqs[j, i] = send_req
       params.send_waited[j, i] = false
@@ -56,12 +59,12 @@ function startComm{N}(params::ParamType{N}, u_arr)
   return nothing
 end
 
-function finishComm(params::ParamType{N}, u_arr)
+function finishComm{N}(params::ParamType{N}, u_arr)
 # wait for communication to finish and copy into u_arr
 
   for i=1:N
     for j=1:2
-      recv_buf_i = params.recv_bufs[j, i]
+      recv_buf_j = params.recv_bufs[j, i]
       peer_j = params.peernums[j, i]
       recv_waited = params.recv_waited[j, i]
       recv_req = params.recv_reqs[j, i]

@@ -224,19 +224,20 @@ function getKernelSignature(dim::Integer, npts::Integer)
 end
 
 function getKernelPrologue(maxdim::Integer)
+# unpack all the variables
 
   str = ""
 
   for i=1:maxdim
     varname = "d$i"
-    str *= string(varname, " = idx(", i, ")\n")
+    str *= string(varname, " = idx[", i, "]\n")
   end
 
   str *= "\n"
 
   for i=1:maxdim
     varname = string("delta_", i, "2")
-    fieldname = string("delta[", i, "]")
+    fieldname = string("deltax_invs2[", i, "]")
     str *= string(varname, " = ", "params.", fieldname, "\n")
   end
 

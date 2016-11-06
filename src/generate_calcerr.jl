@@ -90,7 +90,7 @@ function getCalcErrFunction(dim::Integer)
   end
 
   str *= "\n"
-  str *= indent*"return nothing\n"
+  str *= indent*"return max_err\n"
 
   indent = indent[1:end-2]
 

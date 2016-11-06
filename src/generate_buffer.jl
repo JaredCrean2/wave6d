@@ -147,7 +147,7 @@ function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
 
   str = ""
 
-  str *= "ubuff[ "
+  str *= "buff[ "
   curr_idx = 1
   for i=1:N
     if i == dir
@@ -207,7 +207,7 @@ function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
   str *= "] = "
 
 
-  str *= "ubuff[ "
+  str *= "buff[ "
   curr_idx = 1
   for i=1:N
     if i == dir

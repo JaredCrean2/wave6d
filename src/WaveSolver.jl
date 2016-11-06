@@ -15,12 +15,16 @@ include("generated/kernel_5.jl")
 include("generated/buffers_2.jl")
 include("generated/ic.jl")
 
-function runcase(fname::ASCIIString)
+function runcase(fname)
   
-  f = open(fname)
-  nlines countlines(f)
+  f = open(fname, "r")
+  nlines  = countlines(f)
   @assert (nlines-1) % 3 == 0
   ndims = div(nlines, 3)
+  close(f)
+
+  # countlines leaves the iterator at the end of the file, so reset it
+  f = open(fname, "r")
 
   # the format of the input file must be:
   #  the first nlines lines must contain integers specifying the number of 
@@ -33,8 +37,11 @@ function runcase(fname::ASCIIString)
   Ns_global = Array(Int, ndims)
   xLs = Array(Float64, 2, ndims)
 
+  println("getting dimension")
   for i=1:ndims
+    println("i = ", i)
     str = readline(f)
+    println("str = ", str)
     Ns_global[i] = parse(Int, str)
   end
 
@@ -50,12 +57,15 @@ function runcase(fname::ASCIIString)
 
 
   nghost = 2
-  params = ParamType{ndims}(Ns_global, xLs, nghost)
+  params = ParamType(Ns_global, xLs, nghost)
 
   size_bytes = prod(params.Ns_total_local)*sizeof(Float64)
   println("size of array = ", size_bytes/(1024*1024), " Mbytes")
 
-  u_i = Array(Float64, params.Ns_local...)
+  dims = zeros(Int, ndims + 1)
+  dims[1:end-1] = params.Ns_total_local
+  dims[end] = 2
+  u_i = Array(Float64, params.Ns_total_local...)
 
   # apply IC
   IC1(params, u_i)
@@ -63,7 +73,10 @@ function runcase(fname::ASCIIString)
   # timestep
   tfinal = rk4(step, tmax, u_i, params)
 
-  calcErr1(params, u_i, tfinal)
+  max_err = calcErr1(params, u_i, tfinal)
+  println("max_err = ", max_err)
+
+  MPI.Finalize()
 
 
 end
