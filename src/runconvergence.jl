@@ -12,6 +12,10 @@ push!(LOAD_PATH, path)
 using WaveSolver
 MPI.Init()
 
+if isfile("convergence.dat")
+  rm("convergence.dat")
+end
+
 N = 10
 for i=1:5
   arr[1] = string(N)
