@@ -24,8 +24,10 @@ function runcase(fname)
   nghost = 2
   params = ParamType(Ns_global, xLs, nghost)
 
-  size_bytes = prod(params.Ns_total_local)*sizeof(Float64)
-  println("size of array = ", size_bytes/(1024*1024), " Mbytes")
+  size_bytes = prod(params.Ns_global + 2*nghost)*sizeof(Float64)
+  if params.comm_rank == 0
+    println("global size of array = ", size_bytes/(1024*1024), " Mbytes")
+  end
 
   dims = zeros(Int, ndims + 1)
   dims[1:end-1] = params.Ns_total_local
@@ -39,16 +41,15 @@ function runcase(fname)
   tfinal = rk4(step, tmax, u_i, params)
 
   max_err = calcErr1(params, u_i, tfinal)
-  println("max_err = ", max_err)
-
-  if write_conv == 1
-    f2 = open("convergence.dat", "a+")
-    println(f2, maximum(params.delta_xs), " ", max_err)
-    close(f2)
+  max_err = MPI.Allreduce(max_err, MPI.MAX, params.comm)
+  if params.comm_rank == 0
+    println("max_err = ", max_err)
+    if write_conv == 1
+      f2 = open("convergence.dat", "a+")
+      println(f2, maximum(params.delta_xs), " ", max_err)
+      close(f2)
+    end
   end
-
-  u_i2 = zeros(u_i)
-  IC1(params, u_i2, tfinal)
 
 end
 
