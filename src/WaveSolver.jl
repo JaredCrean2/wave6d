@@ -18,9 +18,44 @@ include("generated/calcerr.jl")
 
 function runcase(fname)
   
+  Ns_global, xLs, tmax, write_conv = parseinput(fname)
+
+  ndims = length(Ns_global)
+  nghost = 2
+  params = ParamType(Ns_global, xLs, nghost)
+
+  size_bytes = prod(params.Ns_total_local)*sizeof(Float64)
+  println("size of array = ", size_bytes/(1024*1024), " Mbytes")
+
+  dims = zeros(Int, ndims + 1)
+  dims[1:end-1] = params.Ns_total_local
+  dims[end] = 2
+  u_i = Array(Float64, dims...)
+
+  # apply IC
+  IC1(params, u_i)
+
+  # timestep
+  tfinal = rk4(step, tmax, u_i, params)
+
+  max_err = calcErr1(params, u_i, tfinal)
+  println("max_err = ", max_err)
+
+  if write_conv == 1
+    f2 = open("convergence.dat", "a+")
+    println(f2, maximum(params.delta_xs), " ", max_err)
+    close(f2)
+  end
+
+  u_i2 = zeros(u_i)
+  IC1(params, u_i2, tfinal)
+
+end
+
+function parseinput(fname)
   f = open(fname, "r")
   nlines  = countlines(f)
-  @assert (nlines-1) % 3 == 0
+  @assert (nlines-2) % 3 == 0
   ndims = div(nlines, 3)
   close(f)
 
@@ -38,11 +73,8 @@ function runcase(fname)
   Ns_global = Array(Int, ndims)
   xLs = Array(Float64, 2, ndims)
 
-  println("getting dimension")
   for i=1:ndims
-    println("i = ", i)
     str = readline(f)
-    println("str = ", str)
     Ns_global[i] = parse(Int, str)
   end
 
@@ -61,58 +93,23 @@ function runcase(fname)
 
   close(f)
 
-  nghost = 2
-  params = ParamType(Ns_global, xLs, nghost)
-  println("params.delta_t = ", params.delta_t)
-  println("params.delta_xs = ", params.delta_xs)
-  println("params.ias = ", params.ias)
-  println("params.ibs = ", params.ibs)
-
-  size_bytes = prod(params.Ns_total_local)*sizeof(Float64)
-  println("size of array = ", size_bytes/(1024*1024), " Mbytes")
-
-  dims = zeros(Int, ndims + 1)
-  dims[1:end-1] = params.Ns_total_local
-  dims[end] = 2
-  println("dims = ", dims)
-  u_i = Array(Float64, dims...)
-
-  # apply IC
-  IC1(params, u_i)
-
-  # timestep
-  tfinal = rk4(step, tmax, u_i, params)
-
-  max_err = calcErr1(params, u_i, tfinal)
-  println("max_err = ", max_err)
-
-  if write_conv == 1
-    f2 = open("convergence.dat", "a+")
-    println(f2, maximum(params.delta_xs, " ", max_err))
-    close(f2)
-  end
-
-  u_i2 = zeros(u_i)
-  IC1(params, u_i2, tfinal)
-
-  println("u_final = \n", u_i)
-  println("u_exact = \n", u_i2)
-  MPI.Finalize()
-
+  return Ns_global, xLs, tmax, write_conv
 
 end
+
+
 
 function step(params::ParamType, u_i, u_ip1, t)
 # single timestep
   params.t = t
-  println("u initial = \n", u_i)
+#  println("u initial = \n", u_i)
   startComm(params, u_i)
   finishComm(params, u_i)
 
-  println("after comm u = \n", u_i)
+#  println("after comm u = \n", u_i)
 
   simpleLoop5(params, u_i, u_ip1)
-  println("u_ip1 = \n", u_ip1)
+#  println("u_ip1 = \n", u_ip1)
 
   return nothing
 end

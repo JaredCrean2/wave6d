@@ -34,7 +34,6 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 
   N = length(Ns_global)
   comm = MPI.COMM_WORLD
-  MPI.Init()
   comm_size = MPI.Comm_size(comm)
   comm_rank = MPI.Comm_rank(comm)
   cart_decomp  = getCartesianDecomposition(comm_size, N)
@@ -84,7 +83,6 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     recv_bufs[2, i] = Array(Float64, dims_i...)
   end
 
-  println("Ns_local_global = \n", Ns_local_global)
   coords = Array(LinSpace{Float64}, N)
   for i=1:N
     xmin = xLs[1, i]
