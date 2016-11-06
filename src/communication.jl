@@ -9,9 +9,6 @@ global const RECV_TAGS = [TAG_RECV_LOWER, TAG_RECV_UPPER]
 
 function startComm{N}(params::ParamType{N}, u_arr)
 
-  println("params.send_bufs = \n", params.send_bufs)
-  println("params.recv_bufs = \n", params.recv_bufs)
-  println("params.send_reqs = \n", params.send_reqs)
   # copy data into send buffers
   for i=1:N
     for j=1:2  # upper and lower directions

@@ -18,8 +18,9 @@ end
 
 function getCalcErrFunction(dim::Integer)
 
+  dp1 = dim + 1
   str = ""
-  str *= "function calcErr1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dim}, t)\n"
+  str *= "function calcErr1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dp1}, t)\n"
 
   str *= "\n"
   indent = "  "
@@ -41,7 +42,7 @@ function getCalcErrFunction(dim::Integer)
   for i=1:dim
     var1 = string("d", i)
     var2 = var1*"min"
-    var3 = var2*"max"
+    var3 = var1*"max"
     str *= indent*"for "*var1*" = "*var2*":"*var3*"\n"
     indent *= "  "
     # get coordinate
@@ -52,36 +53,23 @@ function getCalcErrFunction(dim::Integer)
   str *= "\n"
 
   # function evaluation
-  str_inner = "u_i = u_arr[ "
-  for i=1:dim
-    var = string("d", i)
-    str_inner *= var*", "
+  for eq = 1:2
+    str_inner = "u_i_$eq = "
+    str_inner *= getu_arr(dim, eq)*"\n"
+
+    str_inner *= indent*"u_ex_i_$eq = "
+    str_inner *= getfunc(dim, eq)
+
+
+    str_inner *= indent*"err_i_$eq = abs(u_i_$eq - u_ex_i_$eq)\n\n"
+    str_inner *= indent*"if err_i_$eq > max_err\n"
+    indent *= "  "
+    str_inner *= indent*"max_err = err_i_$eq\n"
+    indent = indent[1:end-2]
+    str_inner *= indent*"end\n\n"
+
+    str *= indent*str_inner
   end
-
-  # remove trailing punctuation
-  str_inner = str_inner[1:end-2]
-  str_inner *= "]\n"
-
-  str_inner *= indent*"u_ex_i = "
-
-  # the terms of the function
-  for i=1:dim
-    var = "x$i"
-    str_inner *= "cos( $var + t ) + "
-  end
-
-  # remove trailing punctuation
-  str_inner = str_inner[1:end-3]
-  str_inner *= "\n"
-
-  str_inner *= indent*"err_i = abs(u_i - u_ex_i)\n\n"
-  str_inner *= indent*"if err_i > max_err\n"
-  indent *= "  "
-  str_inner *= indent*"max_err = err_i\n"
-  indent = indent[1:end-2]
-  str_inner *= indent*"end\n\n"
-
-  str *= indent*str_inner
 
   # end statements
   for i=1:dim

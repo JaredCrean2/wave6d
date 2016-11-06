@@ -18,8 +18,9 @@ end
 
 function getICFunction(dim::Integer)
 
+  dp1 = dim + 1
   str = ""
-  str *= "function IC1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dim})\n"
+  str *= "function IC1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dp1})\n"
 
   str *= "\n"
   indent = "  "
@@ -47,30 +48,21 @@ function getICFunction(dim::Integer)
     str *= indent*"x$i = params.coords[ $idx ][ $var1 ]\n"
   end
 
-  # function evaluation
-  str_inner = "u_arr[ "
-  for i=1:dim
-    var = string("d", i)
-    str_inner *= var*", "
+  # get function
+  for eq=1:2
+
+    str_inner = ""
+    # get array element
+    str_inner *= getu_arr(dim, eq)
+    str_inner *= " = "
+
+    # get the terms of the function
+    str_inner *= getfunc(dim, eq)
+
+    # update string
+    str *= indent*str_inner
   end
 
-  # remove trailing punctuation
-  str_inner = str_inner[1:end-2]
-  str_inner *= "]"
-
-  str_inner *= " = "
-
-  # the terms of the function
-  for i=1:dim
-    var = "x$i"
-    str_inner *= "cos( $var ) + "
-  end
-
-  # remove trailing punctuation
-  str_inner = str_inner[1:end-3]
-  str_inner *= "\n"
-
-  str *= indent*str_inner
 
   # end statement
   for i=1:dim
@@ -88,6 +80,35 @@ function getICFunction(dim::Integer)
   return str
 end
 
+function getu_arr(dim::Integer, eq::Integer)
+# get u_arr[d1, d2, ...]
+# eq is the equation number
 
+  # function evaluation
+  str_inner = "u_arr[ "
+  for i=1:dim
+    var = string("d", i)
+    str_inner *= var*", "
+  end
 
+  str_inner *= "$eq ]"
+
+  return str_inner
+end
+
+function getfunc(dim::Integer, eq::Integer)
+# ge the initial condition in dim dimensions
+  str_inner = ""
+
+  for i=1:dim
+    var = "x$i"
+    str_inner *= "-sin( $var ) + "
+  end
+
+  # remove trailing punctuation
+  str_inner = str_inner[1:end-3]
+  str_inner *= "\n"
+
+  return str_inner
+end
 #generateIC(2)

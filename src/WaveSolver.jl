@@ -14,6 +14,7 @@ include("generated/loops_5.jl")
 include("generated/kernel_5.jl")
 include("generated/buffers_2.jl")
 include("generated/ic.jl")
+include("generated/calcerr.jl")
 
 function runcase(fname)
   
@@ -65,7 +66,8 @@ function runcase(fname)
   dims = zeros(Int, ndims + 1)
   dims[1:end-1] = params.Ns_total_local
   dims[end] = 2
-  u_i = Array(Float64, params.Ns_total_local...)
+  println("dims = ", dims)
+  u_i = Array(Float64, dims...)
 
   # apply IC
   IC1(params, u_i)
@@ -83,10 +85,14 @@ end
 
 function step(params::ParamType, u_i, u_ip1, t)
 # single timestep
+  println("u initial = \n", u_i)
   startComm(params, u_i)
   finishComm(params, u_i)
 
+  println("after comm u = \n", u_i)
+
   simpleLoop5(params, u_i, u_ip1)
+  println("u_ip1 = \n", u_ip1)
 
   return nothing
 end

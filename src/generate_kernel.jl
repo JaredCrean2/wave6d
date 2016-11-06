@@ -213,11 +213,11 @@ function getKernelSignature(dim::Integer, npts::Integer)
 # get the function signature
 
   kernel_name = string("kernel", npts)
-  array_typetag = string("::AbstractArray{T,", dim, "}")
+  array_typetag = string("::AbstractArray{T,", dim+1, "}")
 
   str = string("function ", kernel_name, "{T}(params::ParamType{", dim, "},",
                  " idx,\n")
-  line_indent = " "^19
+  line_indent = " "^20
   str *= string(line_indent, "u_i", array_typetag, ", u_ip1", array_typetag, ")\n")
 
   return str

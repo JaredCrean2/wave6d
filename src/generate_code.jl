@@ -7,7 +7,7 @@ include("generate_ic.jl")
 include("generate_calcerr.jl")
 
 # input values
-stencil = ["1.0", "2.0", "3.0", "4.0", "5.0"]
+stencil = ["-1/12", "4/3", "-5/2", "4/3", "-1/12"]
 maxdim = 6
 neq = 2  # number of equations
 prefix = "generated/"

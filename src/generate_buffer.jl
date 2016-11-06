@@ -30,8 +30,9 @@ function generateFunction(nghost, N, forward=true)
     fname = "copyToMain"
   end
   # write function signature
+  np1 = N + 1
   str = ""
-  str *= "function $fname{T}(params::ParamType{$N}, u_arr::AbstractArray{T, $N},\n           buff::AbstractArray{T, $N}, dir::Integer, isupper::Bool)\n"
+  str *= "function $fname{T}(params::ParamType{$N}, u_arr::AbstractArray{T, $np1},\n           buff::AbstractArray{T, $np1}, dir::Integer, isupper::Bool)\n"
   str *= "# copy ghost values from u_arr to buff\n"
   str *= "# dir specifies the direction to copy, (must be in the range 1:N\n"
   str *= "# isupper tells whether to copy the values for the maximum indices\n"
@@ -101,9 +102,12 @@ function generateFunction(nghost, N, forward=true)
 
     for j=1:nghost
       if forward
-        str *= indent*getAssignment(N, dim, "dfixed$j", j)
+        str *= indent*getAssignment(N, dim, "dfixed$j", j, 1)
+
+        str *= indent*getAssignment(N, dim, "dfixed$j", j, 2)
       else
-        str *= indent*getAssignment2(N, dim, "dfixed$j", j)
+        str *= indent*getAssignment2(N, dim, "dfixed$j", j, 1)
+        str *= indent*getAssignment2(N, dim, "dfixed$j", j, 2)
       end
     end
 
@@ -140,10 +144,11 @@ function getindices(N, dir)
   return vals_extract
 end
 
-function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
+function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer, eq::Integer)
 # assign an element of u_arr to buff
 # dir_var is the name of the fixed variable in u_arr
 # ind is the fixed index in buff
+# eq is the equation number
 
   str = ""
 
@@ -159,8 +164,7 @@ function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
     end
   end
 
-  str = str[1:end-2]
-  str *= "] = "
+  str *= "$eq ] = "
 
   str *= "u_arr[ "
 
@@ -176,16 +180,16 @@ function getAssignment(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
     end
   end
 
-  str = str[1:end-2]  # remove trailing space and comma
-  str *= "]\n"
+  str *= "$eq ]\n"
 
   return str
 end
 
-function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
+function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer, eq::Integer)
 # assign an element of u_arr to buff
 # dir_var is the name of the fixed variable in u_arr
 # ind is the fixed index in buff
+# eq is the equation number
 
   str = ""
 
@@ -203,8 +207,7 @@ function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
     end
   end
 
-  str = str[1:end-2]
-  str *= "] = "
+  str *= "$eq ] = "
 
 
   str *= "buff[ "
@@ -219,9 +222,8 @@ function getAssignment2(N, dir::Integer, dir_var::ASCIIString, ind::Integer)
     end
   end
 
- 
-  str = str[1:end-2]  # remove trailing space and comma
-  str *= "]\n"
+
+  str *= "$eq ]\n"
 
   return str
 end

@@ -23,8 +23,9 @@ end
 function generateLoops(N, npts)
 # generate a function that does N nested for loops
 
+  np1 = N + 1
   str = ""
-  str *= "function simpleLoop$npts{T}(params::ParamType{$N}, u_i::AbstractArray{T, $N}, u_ip1::AbstractArray{T, $N})\n"
+  str *= "function simpleLoop$npts{T}(params::ParamType{$N}, u_i::AbstractArray{T, $np1}, u_ip1::AbstractArray{T, $np1})\n"
 
   indent = "  "
 

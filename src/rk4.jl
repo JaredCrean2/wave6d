@@ -23,9 +23,9 @@ function rk4(f::Function, tmax, u::AbstractArray, params)
   tstep = 1
   while (t < tmax)
 
-    if tstep % 100 == 0
+#    if tstep % 100 == 0
      println("t = ", t)
-   end
+#   end
 #    err = calcError(params, u, t)
 #    println("  err = ", err)
 
