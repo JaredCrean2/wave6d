@@ -20,7 +20,7 @@ function getICFunction(dim::Integer)
 
   dp1 = dim + 1
   str = ""
-  str *= "function IC1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dp1})\n"
+  str *= "function IC1{T}(params::ParamType{$dim}, u_arr::AbstractArray{T, $dp1}, t=0.0)\n"
 
   str *= "\n"
   indent = "  "
@@ -102,7 +102,7 @@ function getfunc(dim::Integer, eq::Integer)
 
   for i=1:dim
     var = "x$i"
-    str_inner *= "-sin( $var ) + "
+    str_inner *= "-sin( $var + t ) + "
   end
 
   # remove trailing punctuation

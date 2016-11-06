@@ -47,26 +47,36 @@ function generateFunction(nghost, N, forward=true)
 
 
   # figure out indices of fixed indices
+
+  # isupper case
   str *= indent*"if isupper\n"
   indent *= "  "
-  ngm1 = nghost - 1
+#  ngm1 = nghost - 1
+  # only the starting point differes for forward and reverse
   if forward
-    str *= indent*"dfixed1 = params.ibs[dir] - $ngm1\n"
+    str *= indent*"dfixed1 = params.ibs[dir] - $nghost\n"
   else
     str *= indent*"dfixed1 = params.ibs[dir] + 1\n"
   end
+
+  # rest of indices
   for i=2:nghost
     im1 = i - 1
     str *= indent*"dfixed$i = dfixed$im1 + 1\n"
   end
   indent = indent[1:end-2]
+
+  # islower case
   str *= indent*"else\n"
   indent *= "  "
+
+  # only the starting point differs for forward and reverse
   if forward
-    str *= indent*"dfixed1 = params.ias[dir]\n"
+    str *= indent*"dfixed1 = params.ias[dir] + 1\n"
   else
     str *= indent*"dfixed1 = 1\n"
   end
+  # rest of indices
   for i=2:nghost
     im1 = i - 1
     str *= indent*"dfixed$i = dfixed$im1 + 1\n"

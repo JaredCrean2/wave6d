@@ -1,4 +1,5 @@
 type ParamType{N, N2}  # N2 = N + 1
+  t::Float64  # current time
   delta_xs::Array{Float64, 1}
   deltax_invs2::Array{Float64, 1}
   delta_t::Float64
@@ -59,7 +60,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   CFL = 0.5
   delta_t = getDeltaT(delta_xs, CFL)
 
-  delta_xinvs2 = 1./(delta_xs.^2)
+  delta_xinvs2 = 1./(delta_xs)
 
   send_reqs = Array(MPI.Request, 2, N); fill!(send_reqs, MPI.REQUEST_NULL)
   recv_reqs = Array(MPI.Request, 2, N); fill!(recv_reqs, MPI.REQUEST_NULL)
@@ -94,7 +95,8 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     coords[i] = coords_global[local_range]
   end
 
-  return ParamType{N, N+1}(delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
+  t = 0.0
+  return ParamType{N, N+1}(t, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, cart_decomp,  xLs, nghost, coords)
 end
 
 

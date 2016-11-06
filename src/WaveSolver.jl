@@ -59,6 +59,10 @@ function runcase(fname)
 
   nghost = 2
   params = ParamType(Ns_global, xLs, nghost)
+  println("params.delta_t = ", params.delta_t)
+  println("params.delta_xs = ", params.delta_xs)
+  println("params.ias = ", params.ias)
+  println("params.ibs = ", params.ibs)
 
   size_bytes = prod(params.Ns_total_local)*sizeof(Float64)
   println("size of array = ", size_bytes/(1024*1024), " Mbytes")
@@ -78,6 +82,11 @@ function runcase(fname)
   max_err = calcErr1(params, u_i, tfinal)
   println("max_err = ", max_err)
 
+  u_i2 = zeros(u_i)
+  IC1(params, u_i2, tfinal)
+
+  println("u_final = \n", u_i)
+  println("u_exact = \n", u_i2)
   MPI.Finalize()
 
 
@@ -85,6 +94,7 @@ end
 
 function step(params::ParamType, u_i, u_ip1, t)
 # single timestep
+  params.t = t
   println("u initial = \n", u_i)
   startComm(params, u_i)
   finishComm(params, u_i)
