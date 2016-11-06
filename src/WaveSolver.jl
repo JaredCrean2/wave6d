@@ -56,6 +56,10 @@ function runcase(fname)
   str = readline(f)
   tmax = parse(Float64, str)
 
+  str = readline(f)
+  write_conv = parse(Int, str)
+
+  close(f)
 
   nghost = 2
   params = ParamType(Ns_global, xLs, nghost)
@@ -81,6 +85,12 @@ function runcase(fname)
 
   max_err = calcErr1(params, u_i, tfinal)
   println("max_err = ", max_err)
+
+  if write_conv == 1
+    f2 = open("convergence.dat", "a+")
+    println(f2, maximum(params.delta_xs, " ", max_err))
+    close(f2)
+  end
 
   u_i2 = zeros(u_i)
   IC1(params, u_i2, tfinal)
