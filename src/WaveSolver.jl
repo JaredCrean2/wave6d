@@ -33,12 +33,16 @@ function runcase(fname)
   dims[1:end-1] = params.Ns_total_local
   dims[end] = 2
   u_i = Array(Float64, dims...)
+  fill!(u_i, 0.0)
 
   # apply IC
   IC1(params, u_i)
 
+  MPI.Barrier(params.comm)
+
   # timestep
   tfinal = rk4(step, tmax, u_i, params)
+
 
   max_err = calcErr1(params, u_i, tfinal)
   max_err = MPI.Allreduce(max_err, MPI.MAX, params.comm)
@@ -100,19 +104,63 @@ end
 
 
 
-function step(params::ParamType, u_i, u_ip1, t)
+function step{N}(params::ParamType{N}, u_i, u_ip1, t)
 # single timestep
-#  println(params.f, "----- entered step -----")
+
+  println(params.f, "----- entered step -----")
+  println(params.f, "params.cart_decomp = ", params.cart_decomp)
+  println(params.f, "size(u_i) = ", size(u_i))
+  println(params.f, "peernums = ", params.peernums)
+  println(params.f, "periodic_flags = \n", params.periodic_flags)
+  for i=1:N
+    for j=1:2
+      println(params.f, "params.send_reqs[$j, $i] = ", params.send_reqs[j, i].val)
+    end
+  end
+  flush(params.f)
+
+
   params.t = t
+
+  # I don't know why, but this makes sure all communication completes before 
+  # calculating u_ip1
+#  MPI.Barrier(params.comm)
 #  println(params.f, "u initial = \n", u_i)
+
+#  fname = string("u0_", params.itr, "_", params.comm_size, "_", params.comm_rank, ".dat")
+#  writedlm(fname, u_i)
+#  fname = string("u_", params.itr, "_", params.comm_size, "_", params.comm_rank, ".dat")
   startComm(params, u_i)
+
   finishComm(params, u_i)
 
+#=
+  # write send and receive buffers
+  for i=1:N
+    for j=1:2
+      fname_j = string("usbuff_", params.comm_size, "_", params.comm_rank, "_", i, "_", j, ".dat")
+      writedlm(fname_j, params.send_bufs[j, i])
+
+      fname_j = string("urbuff_", params.comm_size, "_", params.comm_rank, "_", i, "_", j, ".dat")
+      writedlm(fname_j, params.recv_bufs[j, i])
+    end
+  end
+=#
+
+
+#  writedlm(fname, u_i)
 #  println(params.f, "after comm u = \n", u_i)
 
   simpleLoop5(params, u_i, u_ip1)
 #  println("u_ip1 = \n", u_ip1)
 
+  
+#  fname = string("un_", params.itr, "_", params.comm_size, "_", params.comm_rank, ".dat")
+#  writedlm(fname, u_ip1)
+
+  params.itr += 1
+#  MPI.Barrier(params.comm)
+#  throw(ErrorException(""))
   return nothing
 end
 

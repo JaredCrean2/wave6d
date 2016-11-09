@@ -1,5 +1,6 @@
 type ParamType{N, N2}  # N2 = N + 1
   t::Float64  # current time
+  itr::Int
   delta_xs::Array{Float64, 1}
   deltax_invs2::Array{Float64, 1}
   delta_t::Float64
@@ -19,6 +20,8 @@ type ParamType{N, N2}  # N2 = N + 1
   recv_reqs::Array{MPI.Request, 2}
   send_bufs::Array{Array{Float64, N2}, 2}
   recv_bufs::Array{Array{Float64, N2}, 2}
+  send_tags::Array{Int, 2}
+  recv_tags::Array{Int, 2}
   peernums::Array{Int, 2}  # 2 x ndim array containing peer numbers
   periodic_flags::Array{Bool, 2}
   cart_decomp::Array{Int, 1}  # process grid dimensions
@@ -88,11 +91,15 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
     dims_i[1:end-1] = Ns_total_local
     dims_i[i] = nghost
 
-    send_bufs[1, i] = Array(Float64, dims_i...)
-    send_bufs[2, i] = Array(Float64, dims_i...)
-    recv_bufs[1, i] = Array(Float64, dims_i...)
-    recv_bufs[2, i] = Array(Float64, dims_i...)
+    println(f, "dimension i buffer shape = ", dims_i)
+
+    send_bufs[1, i] = zeros(Float64, dims_i...)
+    send_bufs[2, i] = zeros(Float64, dims_i...)
+    recv_bufs[1, i] = zeros(Float64, dims_i...)
+    recv_bufs[2, i] = zeros(Float64, dims_i...)
   end
+
+  send_tags, recv_tags = getMPITags(N)
 
   coords = Array(LinSpace{Float64}, N)
   for i=1:N
@@ -107,7 +114,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   periodic_flags = getPeriodic(my_subs, cart_decomp, comm_rank, peer_nums)
 
   t = 0.0
-  return ParamType{N, N+1}(t, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, f)
+  return ParamType{N, N+1}(t, 1, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, send_tags, recv_tags, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, f)
 end
 
 
@@ -563,4 +570,32 @@ function getIsPeriodic(my_subs, cart_decomp, comm_rank, dir::Integer, side::Inte
 end
 
 
+function getMPITags(N::Integer)
+# figure out the send and receive tags
 
+  send_tags = zeros(Int, 2, N)
+  tag_i = 1
+  for i=1:N
+    for j=1:2
+      send_tags[j, i] = tag_i
+      tag_i += 1
+    end
+  end
+
+  recv_tags = zeros(Int, 2, N)
+
+  for i=1:N
+    for j=1:2
+      if j == 1
+        jprime = 2
+      else
+        jprime = 1
+      end
+      # for a given grid location and axis, the next lower process
+      # send tag is the receive tag for this process
+      recv_tags[j, i] = send_tags[jprime, i]
+    end
+  end
+
+  return send_tags, recv_tags
+end
