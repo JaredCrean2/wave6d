@@ -16,6 +16,10 @@ include("generated/buffers_2.jl")
 include("generated/ic.jl")
 include("generated/calcerr.jl")
 
+# These would be preprocessor defins controlled by the build system in C
+global const FORCE_SYNC = true  # force synchronization at the beignning of 
+                                # every stage
+
 function runcase(fname)
   
   Ns_global, xLs, tmax, write_conv = parseinput(fname)
@@ -106,7 +110,7 @@ end
 
 function step{N}(params::ParamType{N}, u_i, u_ip1, t)
 # single timestep
-
+#=
   println(params.f, "----- entered step -----")
   println(params.f, "params.cart_decomp = ", params.cart_decomp)
   println(params.f, "size(u_i) = ", size(u_i))
@@ -118,13 +122,12 @@ function step{N}(params::ParamType{N}, u_i, u_ip1, t)
     end
   end
   flush(params.f)
-
+=#
 
   params.t = t
 
   # I don't know why, but this makes sure all communication completes before 
   # calculating u_ip1
-#  MPI.Barrier(params.comm)
 #  println(params.f, "u initial = \n", u_i)
 
 #  fname = string("u0_", params.itr, "_", params.comm_size, "_", params.comm_rank, ".dat")
@@ -133,6 +136,10 @@ function step{N}(params::ParamType{N}, u_i, u_ip1, t)
   startComm(params, u_i)
 
   finishComm(params, u_i)
+
+  if FORCE_SYNC
+    MPI.Barrier(params.comm)
+  end
 
 #=
   # write send and receive buffers

@@ -1,6 +1,6 @@
 include("generate_input.jl")
 
-arr = ["10", "1.0", "1", "1"]
+arr = ["10", "1.0", "6", "1"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -22,7 +22,7 @@ if comm_rank == 0
 end
 
 N = 10
-for i=1:5
+for i=1:4
   arr[1] = string(N)
   MPI.Barrier(MPI.COMM_WORLD)
   if comm_rank == 0
@@ -30,7 +30,7 @@ for i=1:5
   end
   MPI.Barrier(MPI.COMM_WORLD)
   runcase("input.txt")
-  N *= 2
+  N += 1
 end
 
 MPI.Finalize()

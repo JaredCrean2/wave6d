@@ -18,9 +18,13 @@ function startComm{N}(params::ParamType{N}, u_arr)
       recv_buf_j = params.recv_bufs[j, i]
       recv_waited = params.recv_waited[j, i]
       recv_tag = params.recv_tags[j, i]
+      recv_req = params.recv_reqs[j, i]
 
       if !recv_waited
-        MPI.Wait!(recv_req)
+        stat = MPI.Wait!(recv_req)
+        if MPI.Get_error(stat) != 0 && !FORCE_SYNC
+          throw(ErrorException("MPI Wait on receive $i, $j errored"))
+        end
         # pedantic
         params.recv_waited[j, i] = true
       end
@@ -55,7 +59,7 @@ function startComm{N}(params::ParamType{N}, u_arr)
 
       #TODO: optimize the case where peer_j = myrank
       copyToBuffer(params, u_arr, send_buf_j, i, isupper, isperiodic)
-
+#=
       indices = Array(Any, N+1)
       fill!(indices, 3)
       indices[N+1] = 1
@@ -66,13 +70,18 @@ function startComm{N}(params::ParamType{N}, u_arr)
       println(params.f, "send_buffer sum = ", sum(send_buf_j))
 #      println(params.f, "recv_buffer[1:2, 3, 3] = ", recv_buf_j[indices...])
       
-
+=#
       # must wait for previous communication with peer to finish, because
       # MPI does not guarantee order of arrival
       if !send_waited
-        println(params.f, "waiting for previous send to complete")
+#        println(params.f, "waiting for previous send to complete")
         stat = MPI.Wait!(send_req)
-        println(params.f, "stat error value = ", MPI.Get_error(stat))
+
+        if MPI.Get_error(stat) != 0 && !FORCE_SYNC
+          throw(ErrorException("MPI Wait on send $i, $j errored"))
+        end
+
+#        println(params.f, "stat error value = ", MPI.Get_error(stat))
         # pedantic
         params.send_waited[j, i] = true
       end
@@ -103,13 +112,18 @@ function finishComm{N}(params::ParamType{N}, u_arr)
       end
 
       if !recv_waited
-        println(params.f, "waiting for recv ", i, ", ", j)
-        MPI.Wait!(recv_req)
-        params.recv_waited[j, i] = true
-      else
-        println(params.f, "not waiting for recv ", i, ", ", j)
-      end
+#        println(params.f, "waiting for recv ", i, ", ", j)
+        stat = MPI.Wait!(recv_req)
+      
+        if MPI.Get_error(stat) != 0 && !FORCE_SYNC
+          throw(ErrorException("MPI Wait on receive $i, $j errored"))
+        end
 
+        params.recv_waited[j, i] = true
+#      else
+#        println(params.f, "not waiting for recv ", i, ", ", j)
+      end
+#=
       indices = Array(Any, N+1)
       fill!(indices, 3)
       indices[N+1] = 1
@@ -118,7 +132,7 @@ function finishComm{N}(params::ParamType{N}, u_arr)
       println(params.f, "receiving from process ", peer_j, ", recv_tag = ", params.recv_tags[j, i]) 
       println(params.f, "recv_buf[1:2, 3, 3] = ", recv_buf_j[indices...])
       println(params.f, "sum recv_buf = ", sum(recv_buf_j))
-
+=#
 
       copyToMain(params, u_arr, recv_buf_j, i, isupper)
     end
