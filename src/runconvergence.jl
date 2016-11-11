@@ -1,6 +1,6 @@
 include("generate_input.jl")
 
-arr = ["10", "1.0", "6", "1"]
+arr = ["10", "1.0", "1", "1"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -30,7 +30,7 @@ for i=1:4
   end
   MPI.Barrier(MPI.COMM_WORLD)
   runcase("input.txt")
-  N += 1
+  N += 10
 end
 
 MPI.Finalize()
