@@ -20,6 +20,7 @@ include("generated/calcerr.jl")
 # These would be preprocessor defins controlled by the build system in C
 global const FORCE_SYNC = true  # force synchronization at the beignning of 
                                 # every stage
+global const USE_LOW_STORAGE = true
 
 function runcase(fname)
   
@@ -46,8 +47,11 @@ function runcase(fname)
   MPI.Barrier(params.comm)
 
   # timestep
-  tfinal = lserk(step, tmax, u_i, params)
-#  tfinal = rk4(step, tmax, u_i, params)
+  if USE_LOW_STORAGE
+    tfinal = lserk(step, tmax, u_i, params)
+  else
+    tfinal = rk4(step, tmax, u_i, params)
+  end
 
 
   max_err = calcErr1(params, u_i, tfinal)
