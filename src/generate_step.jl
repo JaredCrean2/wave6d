@@ -50,7 +50,7 @@ function generateStep(Nblock, blocksize, npts)
   str *= indent*"end\n"
 
 
-  str *= indent*"blockedLoop_$suffix(params, u_i, u_ip1)\n"
+  str *= indent*"blockLoop$suffix(params, u_i, u_ip1)\n"
 
   str *= indent*"params.itr += 1\n"
 
@@ -83,7 +83,6 @@ function generate_accessor(Nblock, blocksizes::AbstractArray, npts)
     indent *= "  "
     str *= get_blocksize_loop(indent, Nblock_i, blocksizes, npts)
     indent = indent[1:end-2]
-
   end
 
   str *= indent*"else\n"
@@ -113,7 +112,7 @@ function get_blocksize_loop(indent, Nblock, blocksizes::AbstractArray, npts)
 
     str *= indent*if_type*"blocksize == $blocksize_i\n"
     indent *= "  "
-    fname = string("blockloop_", npts, "_", Nblock, "_", blocksize_i)
+    fname = string("step", npts, "_", Nblock, "_", blocksize_i)
     str *= indent*"return "*fname*"\n"
     indent = indent[1:end-2]
   end

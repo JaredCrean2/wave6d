@@ -52,8 +52,8 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
       block_end = string("blockend", i)
 
       block_start_calc = " = "*varname*"\n"
-      nblocks_calc = string(" = div( ", varname2, " - ", varname, ", ", blocksize, ")\n")
-      block_end_calc = " = "*block_start*" + "*string(blocksize)*" * "*nblocks*"\n"
+      nblocks_calc = string(" = div( ", varname2, " - ", varname, "+ 1, ", blocksize, ")\n")
+      block_end_calc = " = "*block_start*" + ("*string(blocksize)*" * "*nblocks*") - 1\n"
 
       str *= indent*block_start*block_start_calc
       str *= indent*nblocks*nblocks_calc
@@ -74,7 +74,7 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
   # generate loops
   for i=N:-1:1
     varname = string("d", i)
-    if N <= Nblock
+    if i <= Nblock
       varname_min = string("blockstart", i)
       varname_max = string("blockend", i)
       loop_range = string(varname_min, ":", blocksize, ":", varname_max)
@@ -83,7 +83,6 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
       varname_max = string("d", i, "max")
       loop_range = string(varname_min, ":", varname_max)
     end
-    
 
     str *= indent*"for "*varname*" = "*loop_range*"\n"
     indent *= "  "
@@ -107,6 +106,13 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
 
   # call kernel
   str *= indent*"kernel$npts(params, idx, u_i, u_ip1)\n"
+
+  # end block loops
+  for i=Nblock:-1:1
+    indent = indent[1:end-2]
+    str *= indent*"end\n"
+  end
+
 
   # end loops
   for i=1:N

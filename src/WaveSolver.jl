@@ -16,6 +16,11 @@ include("generated/kernel_5.jl")
 include("generated/buffers_2.jl")
 include("generated/ic.jl")
 include("generated/calcerr.jl")
+include("generated/step_5.jl")
+include("generated/blockloops_5_2.jl")
+include("generated/blockloops_5_4.jl")
+include("generated/blockloops_5_8.jl")
+include("generated/blockloops_5_16.jl")
 
 # These would be preprocessor defins controlled by the build system in C
 global const FORCE_SYNC = true  # force synchronization at the beignning of 
@@ -23,8 +28,8 @@ global const FORCE_SYNC = true  # force synchronization at the beignning of
 global const USE_LOW_STORAGE = true
 
 function runcase(fname)
-  
-  Ns_global, xLs, tmax, write_conv = parseinput(fname)
+  npts = 5  # number of stencil points
+  Ns_global, xLs, tmax, write_conv, nblock, blocksize = parseinput(fname)
 
   ndims = length(Ns_global)
   nghost = 2
@@ -46,11 +51,13 @@ function runcase(fname)
 
   MPI.Barrier(params.comm)
 
+  stepfunc = getStepFunc(ndims, nblock, blocksize, npts)
+  println("stepfunc = ", stepfunc)
   # timestep
   if USE_LOW_STORAGE
-    tfinal = lserk(step, tmax, u_i, params)
+    tfinal = lserk(stepfunc, tmax, u_i, params)
   else
-    tfinal = rk4(step, tmax, u_i, params)
+    tfinal = rk4(stepfunc, tmax, u_i, params)
   end
 
 
@@ -70,8 +77,8 @@ end
 function parseinput(fname)
   f = open(fname, "r")
   nlines  = countlines(f)
-  @assert (nlines-2) % 3 == 0
-  ndims = div(nlines, 3)
+  @assert (nlines-4) % 3 == 0
+  ndims = div(nlines-4, 3)
   close(f)
 
   # countlines leaves the iterator at the end of the file, so reset it
@@ -106,9 +113,15 @@ function parseinput(fname)
   str = readline(f)
   write_conv = parse(Int, str)
 
+  str = readline(f)
+  Nblock  = parse(Int, str)
+
+  str = readline(f)
+  blocksize = parse(Int, str)
+
   close(f)
 
-  return Ns_global, xLs, tmax, write_conv
+  return Ns_global, xLs, tmax, write_conv, Nblock, blocksize
 
 end
 

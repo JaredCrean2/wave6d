@@ -1,6 +1,6 @@
 include("generate_input.jl")
-
-arr = ["10", "1.0", "2", "1"]
+# npoints, tmax, maxdim, writeconv, Nblock, blocksize
+arr = ["10", "1.0", "6", "1", "3", "2"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -21,7 +21,7 @@ if comm_rank == 0
   end
 end
 
-N = 10
+N = 4
 for i=1:4
   arr[1] = string(N)
   MPI.Barrier(MPI.COMM_WORLD)
@@ -30,7 +30,7 @@ for i=1:4
   end
   MPI.Barrier(MPI.COMM_WORLD)
   runcase("input.txt")
-  N += 10
+  N += 2
 end
 
 MPI.Finalize()

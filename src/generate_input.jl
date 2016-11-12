@@ -2,8 +2,8 @@
 
 function makeinput(arr)
 
-  if length(arr) != 4
-    println("usage: N, tmax, maxdim, convergence")
+  if length(arr) < 4 || length(arr) > 6
+    println("usage: N, tmax, maxdim, convergence Nblock=0 blocksize=4")
     exit()
   end
 
@@ -11,6 +11,17 @@ function makeinput(arr)
   tmax = arr[2]
   maxdim = parse(Int, arr[3])
   convergence = parse(Int, arr[4])
+  if length(arr) >= 5
+    Nblock = parse(Int, arr[5])
+  else
+    Nblock = 0
+  end
+
+  if length(arr) >= 6
+    blocksize = parse(Int, arr[6])
+  else
+    blocksize = 4
+  end
 
   f = open("input.txt", "w")
   for i=1:maxdim
@@ -25,6 +36,9 @@ function makeinput(arr)
 
   println(f, tmax)
   println(f, convergence)
+
+  println(f, Nblock)
+  println(f, blocksize)
 
   close(f)
 end

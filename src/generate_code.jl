@@ -13,6 +13,7 @@ stencil = ["1/12", "-2/3", "0", "2/3", "-1/12"]
 maxdim = 6
 neq = 2  # number of equations
 prefix = "generated/"
+#blocksizes = [2, 4, 8, 16]
 blocksizes = [2, 4, 8, 16]
 
 
