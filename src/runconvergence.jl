@@ -1,6 +1,6 @@
 include("generate_input.jl")
 
-arr = ["10", "1.0", "1", "1"]
+arr = ["10", "1.0", "2", "1"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)

@@ -27,20 +27,20 @@ function generateLoops(N, npts)
   str = ""
   str *= "function simpleLoop$npts{T}(params::ParamType{$N}, u_i::AbstractArray{T, $np1}, u_ip1::AbstractArray{T, $np1})\n"
 
+  str *= "\n"
   indent = "  "
 
   # generate loop bounds
-  for i=1:N
+  for i=N:-1:1
     varname = string("d", i, "min")
     varname2 = string("d", i, "max")
-    idx = N - i + 1
-    str *= indent*varname*" = params.ias[$idx]\n"
-    str *= indent*varname2*" = params.ibs[$idx]\n"
+    str *= indent*varname*" = params.ias[$i]\n"
+    str *= indent*varname2*" = params.ibs[$i]\n"
   end
 
   str *= "\n"
   # generate loops
-  for i=1:N
+  for i=N:-1:1
     varname = string("d", i)
     varname_min = string("d", i, "min")
     varname_max = string("d", i, "max")
@@ -49,20 +49,7 @@ function generateLoops(N, npts)
     indent *= "  "
   end
 
-  # generate body
-  str_inner = ""
-  str_inner *= indent*"idx = ("
-  for i=1:N
-    idx = N - i + 1  # indices are reversed
-    varname = "d$idx"
-    str_inner *= varname*", "
-  end
-
-  # remove trailing space and comma
-  if N > 1
-    str_inner = str_inner[1:end-2]
-  end
-  str_inner *= ")\n"
+  str_inner, indent = get_tuple(indent, N)
   str *= str_inner
 
   # call kernel
@@ -82,6 +69,23 @@ function generateLoops(N, npts)
   return str
 end
 
+function get_tuple(indent, N)
+  # generate body
+  str_inner = ""
+  str_inner *= indent*"idx = ("
+  for i=1:N
+    varname = "d$i"
+    str_inner *= varname*", "
+  end
+
+  # remove trailing space and comma
+  if N > 1
+    str_inner = str_inner[1:end-2]
+  end
+  str_inner *= ")\n"
+
+  return str_inner, indent
+end
 
 
 
