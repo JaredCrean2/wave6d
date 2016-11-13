@@ -1,7 +1,7 @@
 include("hilbert.jl")
 
-ndims = 2
-npoints = 1024
+ndims = 6
+npoints = 16^6
 
 checkDimensions(ndims, 1024)
 
@@ -14,3 +14,11 @@ writedlm("hdata3.dat", idxs.' - 1)
 
 nblocks = getNumBlocks(1024, 2, 64)
 println("nblocks = ", nblocks)
+
+ndims = 3
+coords, idxs = getState(ndims, npoints)
+checkDimensions(ndims, 16)
+
+loadNpoints(npoints, ndims, coords, idxs)
+
+writedlm("hdata3.dat", idxs.' - 1)
