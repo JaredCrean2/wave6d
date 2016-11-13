@@ -1,7 +1,4 @@
-#include "hilbert.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "stdint.h"
+#include "test.h"
 
 void printArray(FILE* f, bitmask_t arr[], unsigned int len)
 {
@@ -35,12 +32,15 @@ void loadNpoints(int n, int dims, bitmask_t coords[], uint16_t idxs[])
 {
   // integer division
   unsigned int nbits_per_dim = (8*sizeof(bitmask_t) / dims);
-
+  int idx_val;
 
   for (int i = 0; i < n; ++i)
   {    // copy to idxs
     for (int j = 0; j < dims; ++j)
-      idxs[idx(j, i, dims, n)] = coords[j] + 1;  // convert to 1 based indexing
+    {
+      idx_val = idx(j, i, dims, n);
+      idxs[idx_val] = coords[j] + 1;  // convert to 1 based indexing
+    }
 
     hilbert_incr(dims, nbits_per_dim, coords);
   }
@@ -71,7 +71,7 @@ int checkDimensions(int dims, int npoints  )
 }
 
 
-
+#ifdef BUILD_EXE
 int main(int argc, char* argv[])
 {
 
@@ -128,4 +128,4 @@ int main(int argc, char* argv[])
 
   return 0;
 }
-
+#endif
