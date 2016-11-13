@@ -93,8 +93,13 @@ function parseinput(fname)
   #  grid points in each direction
   #  the first 2*nlines must be floating point numbers specifying the minimum
   #  and maximum coordinate values for each dimension (one per line, alternating
-  #  minimum and maximum
-  #  The final line must be the a floating point number for the maximum time
+  #  minimum and maximum).
+  #  The next must be the a floating point number for the maximum time
+  #  The next line must be either 1 or 0 to specify whether or not to write
+  #  to convergence.dat (1 == write)
+  #  The next line must be an integer specifying what kind of loop blocking to
+  #  do (see code comments for details).
+  #  The final line must be an integer specifying the block size
 
   Ns_global = Array(Int, ndims)
   xLs = Array(Float64, 2, ndims)
