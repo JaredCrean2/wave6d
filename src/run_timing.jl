@@ -20,8 +20,10 @@ comm_rank = MPI.Comm_rank(MPI.COMM_WORLD)
 comm_size = MPI.Comm_size(MPI.COMM_WORLD)
 
 if isdir("timing_data")
+  println("deleting existing data")
   rm("timing_data", recursive=true)
 end
+
 mkdir("timing_data")
 cd("./timing_data")
 
