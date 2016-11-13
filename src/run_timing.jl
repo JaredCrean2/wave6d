@@ -2,9 +2,11 @@ include("generate_input.jl")
 # npoints, tmax, maxdim, writeconv, Nblock, blocksize
 arr = ["10", "1.0", "6", "0", "3", "2"]
 
-#npoints = [4, 4, 4, 4, 4, 4] + 4
-npoints = [16777208, 4088, 248, 56, 24, 16]
-tmax = [1.8725356995210904e-5, 0.03839639029075767, 0.4172101797596007, 1.331183327792285, 2.731819698773733, 4.759988869075444]
+npoints = [4, 4, 4, 4, 4, 4] + 4
+tmax = [1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5]
+
+#npoints = [16777216, 4096, 256, 64, 32, 16]
+#tmax = [1.872535253073763e-5, 0.03835888465921603, 0.410665706351607, 1.2466637514245213, 2.0268339700579308, 3.4906585039886586]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -76,6 +78,30 @@ for d=1:maxdim
   runcase("input.txt")
   cd("..")
 end
+
+# run hilbert cases
+nblock = -1
+blocksize = 0
+
+arr[5] = string(nblock)
+arr[6] = string(blocksize)
+
+for d=2:maxdim
+  arr[1] = string(npoints[d])
+  arr[2] = string(tmax[d])
+  arr[3] = string(d)
+
+  println("running hilbert maxdim = ", d,)
+
+  dirname = string("h_", d)
+  mkdir(dirname)
+  cd(dirname)
+
+  makeinput(arr)
+  runcase("input.txt")
+  cd("..")
+end
+
 
 cd("..")
 
