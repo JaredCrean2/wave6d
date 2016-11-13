@@ -48,7 +48,7 @@ for d=1:6
   arr_size_i = 0.0
   n = 1
   while (arr_size_i < arr_size)
-    n += 1
+    n *= 2
     real_n = n + 4  # include ghost points
     arr_size_i = ((real_n^d)*8)/(1024*1024)
   end
