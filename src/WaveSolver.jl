@@ -29,11 +29,12 @@ global const USE_LOW_STORAGE = true
 
 function runcase(fname)
   npts = 5  # number of stencil points
+
   Ns_global, xLs, tmax, write_conv, nblock, blocksize = parseinput(fname)
 
   ndims = length(Ns_global)
   nghost = 2
-  params = ParamType(Ns_global, xLs, nghost)
+  params = ParamType(Ns_global, xLs, nghost, nblock)
 
   size_bytes = prod(params.Ns_global + 2*nghost)*sizeof(Float64)
   if params.comm_rank == 0
@@ -115,9 +116,14 @@ function parseinput(fname)
   str = readline(f)
   write_conv = parse(Int, str)
 
+  # number of loops to block
+  # 0 = use regular step function
+  # -1 = use hilbert curve
+  # > 0 = block the innermost n loops
   str = readline(f)
   Nblock  = parse(Int, str)
 
+  # only used if Nblock > 0
   str = readline(f)
   blocksize = parse(Int, str)
 
