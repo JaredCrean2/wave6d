@@ -31,11 +31,11 @@ function lserk(f::Function, tmax, u::AbstractArray, params)
   tstep = 1
   while (t < tmax)
 
-#    if tstep % 100 == 0
+    if tstep % 100 == 0
      if params.comm_rank == 0
        println("t = ", t)
      end
-#   end
+   end
 #    err = calcError(params, u, t)
 #    println("  err = ", err)
 

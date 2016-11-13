@@ -71,7 +71,7 @@ end
 
 function generate_accessor(Nblock, blocksizes::AbstractArray, npts)
 
-  # N doesn't matter, it is handled by dispathc
+  # N doesn't matter, it is handled by dispatch
   str = ""
   indent = ""
 
@@ -82,6 +82,11 @@ function generate_accessor(Nblock, blocksizes::AbstractArray, npts)
   str *= indent*"if Nblock == 0\n"
   indent *= "  "
   str *= indent*"return step\n"  # return the simple loop version
+  indent = indent[1:end-2]
+
+  str *= indent*"elseif Nblock == -1\n"
+  indent *= "  "
+  str *= indent*"return hilbertStep\n"
   indent = indent[1:end-2]
 
   for Nblock_i = 1:Nblock  # loop over number of blocked loops

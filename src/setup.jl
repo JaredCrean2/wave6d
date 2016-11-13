@@ -137,16 +137,34 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
 
 
   if nblock == -1  # use Hilbert curve
+    if N == 1
+      throw(ErrorException("1 dimensional Hilbert curve is equivelent to zero blocked loops, used that instead"))
+    end
+
     for i=1:N
       if Ns_local[i] != Ns_local[1]
         throw(ErrorException("All dimensions must be equal when using Hilbert curve"))
       end
     end
-    coords, idxs = getState(ndims, npoints)
+
+    # if not power of 2
+    if Ns_local[1] & (Ns_local[1] - 1) != 0
+      throw(ErrorException("All dimensions must be a power of 2 when using Hilbert curve"))
+    end
+
+    # the calculate of the hilbert curve is too expensive to be done inside the
+    # loops over spatial dimensions, so get the entire curve here
+    npoints = prod(Ns_local)
+    hilbert_coords, idxs = getState(N, npoints)
     checkDimensions(N, Ns_local[1])
-    println("Loading Hilbert curve points")
-    loadNpoints(prod(Ns_local), N, cords, idxs)
-    println("finished loading Hilbert curve points")
+#    println("Loading Hilbert curve points")
+    loadNpoints(npoints, N, hilbert_coords, idxs)
+#    println("finished loading Hilbert curve points")
+
+    @assert minimum(idxs) == 1
+    @assert maximum(idxs) == Ns_local[1]
+
+    println("size of Hilbert index array = ", length(idxs)*sizeof(eltype(idxs))/(1024*1024), " Mbytes")
   else
     idxs = zeros(UInt16, 0, 0)
   end

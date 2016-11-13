@@ -3,6 +3,7 @@
 include("generate_kernel.jl")
 include("generate_loops.jl")
 include("generate_loops_blocked.jl")
+include("generate_loops_hilbert.jl")
 include("generate_buffer.jl")
 include("generate_ic.jl")
 include("generate_calcerr.jl")
@@ -25,6 +26,7 @@ generate_loops(maxdim, npts, prefix)
 for bs in blocksizes
   generate_loops_blocked(maxdim, npts, bs, prefix)
 end
+generate_loops_hilbert(maxdim, npts, prefix)
 generate_buffers(2, maxdim, prefix)
 generate_ic(maxdim, prefix)
 generate_calcerr(maxdim, prefix)

@@ -21,6 +21,7 @@ include("generated/blockloops_5_2.jl")
 include("generated/blockloops_5_4.jl")
 include("generated/blockloops_5_8.jl")
 include("generated/blockloops_5_16.jl")
+include("generated/hilbertloops_5.jl")
 
 # These would be preprocessor defins controlled by the build system in C
 global const FORCE_SYNC = true  # force synchronization at the beignning of 
@@ -155,6 +156,28 @@ function step{N}(params::ParamType{N}, u_i, u_ip1, t)
 
   return nothing
 end
+
+function hilbertStep{N}(params::ParamType{N}, u_i, u_ip1, t)
+# single timestep
+  params.t = t
+
+  params.time.t_comm += @elapsed begin
+    startComm(params, u_i)
+    finishComm(params, u_i)
+
+    if FORCE_SYNC
+      MPI.Barrier(params.comm)
+    end
+  end
+
+
+  params.time.t_compute += @elapsed hilbertLoop5(params, u_i, u_ip1)
+
+  params.itr += 1
+
+  return nothing
+end
+
 
 
 

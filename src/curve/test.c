@@ -58,9 +58,6 @@ int checkDimensions(int dims, int npoints  )
   for (int i = 1; i < nbits_per_dim; ++i)
     max_size *= 2;
 
-  printf("nbits_per_dim = %d\n", nbits_per_dim);
-  printf("max_size = %d\n", max_size);
-  printf("npoints = %d\n", npoints);
   if ( max_size < npoints) // -1 becaue zero is representable
   {
     fprintf(stderr, "Error: using %d bits per dimension can represent a maximum of %d points, %d is too many\n", nbits_per_dim, max_size, npoints);
