@@ -51,6 +51,7 @@ for d=1:maxdim
 
       makeinput(arr)
       runcase("input.txt")
+      gc()
       cd("..")
     end
   end
@@ -76,6 +77,7 @@ for d=1:maxdim
 
   makeinput(arr)
   runcase("input.txt")
+  gc()
   cd("..")
 end
 
@@ -99,6 +101,7 @@ for d=2:maxdim
 
   makeinput(arr)
   runcase("input.txt")
+  gc()
   cd("..")
 end
 
