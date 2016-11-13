@@ -72,6 +72,8 @@ function runcase(fname)
     end
   end
 
+  write_timing(params.time, "timing.dat")
+
 end
 
 function parseinput(fname)
@@ -131,16 +133,17 @@ function step{N}(params::ParamType{N}, u_i, u_ip1, t)
 # single timestep
   params.t = t
 
-  startComm(params, u_i)
+  params.time.t_comm += @elapsed begin
+    startComm(params, u_i)
+    finishComm(params, u_i)
 
-  finishComm(params, u_i)
-
-  if FORCE_SYNC
-    MPI.Barrier(params.comm)
+    if FORCE_SYNC
+      MPI.Barrier(params.comm)
+    end
   end
 
 
-  simpleLoop5(params, u_i, u_ip1)
+  params.time.t_compute += @elapsed simpleLoop5(params, u_i, u_ip1)
 
   params.itr += 1
 

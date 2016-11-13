@@ -17,6 +17,8 @@ function makeinput(arr)
     Nblock = 0
   end
 
+  println("Nblock = ", Nblock)
+
   if length(arr) >= 6
     blocksize = parse(Int, arr[6])
   else

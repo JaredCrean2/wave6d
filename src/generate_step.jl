@@ -39,6 +39,9 @@ function generateStep(Nblock, blocksize, npts)
   indent *= "  "
   str *= indent*"params.t = t\n"
 
+  str *= indent*"params.time.t_comm += @elapsed begin\n"
+  indent *= "  "
+
   str *= indent*"startComm(params, u_i)\n"
 
   str *= indent*"finishComm(params, u_i)\n"
@@ -48,9 +51,12 @@ function generateStep(Nblock, blocksize, npts)
   str *= indent*"MPI.Barrier(params.comm)\n"
   indent = indent[1:end-2]
   str *= indent*"end\n"
+  indent = indent[1:end-2]
+
+  str *= indent*"end\n"
 
 
-  str *= indent*"blockLoop$suffix(params, u_i, u_ip1)\n"
+  str *= indent*"params.time.t_compute += @elapsed blockLoop$suffix(params, u_i, u_ip1)\n"
 
   str *= indent*"params.itr += 1\n"
 

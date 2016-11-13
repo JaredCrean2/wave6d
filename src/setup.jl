@@ -1,3 +1,22 @@
+type Timing
+  t_comm::Float64
+  t_compute::Float64
+
+  function Timing()
+    return new(0.0, 0.0)
+  end
+end
+
+function write_timing(time::Timing, fname)
+
+  f = open(fname, "w")
+  println(f, time.t_comm)
+  println(f, time.t_compute)
+
+  close(f)
+  return nothing
+end
+
 type ParamType{N, N2}  # N2 = N + 1
   t::Float64  # current time
   itr::Int
@@ -29,11 +48,12 @@ type ParamType{N, N2}  # N2 = N + 1
   nghost::Int
   coords::Array{LinSpace{Float64}, 1}
   f::IO
+  time::Timing
 end
 
 include("setup2.jl")  # the auto-generated part
 
-global const debug = true
+global const debug = false
 function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
 # Ns = number of grid points (not including ghosts
 # xls = 2 x ndim array of xmin and xmax for each dimension
@@ -114,7 +134,8 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost)
   periodic_flags = getPeriodic(my_subs, cart_decomp, comm_rank, peer_nums)
 
   t = 0.0
-  return ParamType{N, N+1}(t, 1, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, send_tags, recv_tags, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, f)
+  time = Timing()
+  return ParamType{N, N+1}(t, 1, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, send_tags, recv_tags, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, f, time)
 end
 
 
