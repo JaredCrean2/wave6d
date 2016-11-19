@@ -45,7 +45,7 @@ function generateLoops(N, npts)
     varname_min = string("d", i, "min")
     varname_max = string("d", i, "max")
 
-    str *= indent*"for "*varname*" = "*varname_min*":"*varname_max*"\n"
+    str *= indent*"@simd for "*varname*" = "*varname_min*":"*varname_max*"\n"
     indent *= "  "
   end
 

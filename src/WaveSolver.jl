@@ -53,7 +53,10 @@ function runcase(fname)
 
   MPI.Barrier(params.comm)
 
-  stepfunc = getStepFunc(ndims, nblock, blocksize, npts)
+  # get the functions that compute a single evaluation of the right hand
+  # side and the function that does all the looping
+  # rk4 only needs the first one, but the second one is needed for outputting
+  stepfunc, loopfunc = getStepFunc(ndims, nblock, blocksize, npts)
   println("stepfunc = ", stepfunc)
   # timestep
   if USE_LOW_STORAGE
@@ -75,6 +78,24 @@ function runcase(fname)
   end
 
   write_timing(params.time, "timing.dat")
+
+  # write machine code to file
+  originalstdout = STDOUT
+  f = open("code_llvm.txt", "w")
+  redirect_stdout(f)
+
+  code_llvm(loopfunc, (typeof(params), typeof(u_i), typeof(u_i)))
+  flush(f)
+  close(f)
+  
+  f = open("code_native.txt", "w")
+  redirect_stdout(f)
+  code_native(loopfunc, (typeof(params), typeof(u_i), typeof(u_i)))
+
+  flush(f)
+  close(f)
+
+  redirect_stdout(originalstdout)
 
 end
 

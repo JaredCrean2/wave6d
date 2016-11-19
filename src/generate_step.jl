@@ -81,12 +81,12 @@ function generate_accessor(Nblock, blocksizes::AbstractArray, npts)
 
   str *= indent*"if Nblock == 0\n"
   indent *= "  "
-  str *= indent*"return step\n"  # return the simple loop version
+  str *= indent*"return step, simpleLoop5\n"  # return the simple loop version
   indent = indent[1:end-2]
 
   str *= indent*"elseif Nblock == -1\n"
   indent *= "  "
-  str *= indent*"return hilbertStep\n"
+  str *= indent*"return hilbertStep, hilbertLoop5\n"
   indent = indent[1:end-2]
 
   for Nblock_i = 1:Nblock  # loop over number of blocked loops
@@ -124,7 +124,8 @@ function get_blocksize_loop(indent, Nblock, blocksizes::AbstractArray, npts)
     str *= indent*if_type*"blocksize == $blocksize_i\n"
     indent *= "  "
     fname = string("step", npts, "_", Nblock, "_", blocksize_i)
-    str *= indent*"return "*fname*"\n"
+    fname2 = string("blockLoop", npts, "_", Nblock, "_", blocksize_i)
+    str *= indent*"return "*fname*", "*fname2*"\n"
     indent = indent[1:end-2]
   end
 
