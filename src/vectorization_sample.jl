@@ -26,8 +26,8 @@ function runcase()
   # array of indices used by hilbertLoop
   idxs = Array(Int, 2, nblocks*nblocks)
   idx = 1
-  for i=1:nblocks
-    for j=1:nblocks
+  for j=1:nblocks
+    for i=1:nblocks
       idxs[1, idx] = i
       idxs[2, idx] = j
       idx += 1
@@ -39,13 +39,16 @@ function runcase()
   u_i = rand(npoints_tot, npoints_tot, 2)
   u_ip1 = zeros(u_i)
 
+  println("blockLoop timing:")
+  @time blockLoop5_2_16(params, u_i, u_ip1)
+  fill!(u_ip1, 0.0)
+  @time blockLoop5_2_16(params, u_i, u_ip1)
+
+  println("hilbertLoop timing:")
   @time hilbertLoop5_2_16(params, u_i, u_ip1)
   fill!(u_ip1, 0.0)
   @time hilbertLoop5_2_16(params, u_i, u_ip1)
 
-  @time blockLoop5_2_16(params, u_i, u_ip1)
-  fill!(u_ip1, 0.0)
-  @time blockLoop5_2_16(params, u_i, u_ip1)
 
   # write machine code to file
   originalstdout = STDOUT
@@ -83,32 +86,6 @@ function runcase()
 end
 
 
-function hilbertLoop5_2_16{T}(params::ParamType{2}, u_i::AbstractArray{T, 3}, u_ip1::AbstractArray{T, 3})
-# decompose grid into blocks of size 16
-# the first loop uses params.idxs to specify the indices of the block
-# the inner loops go over the points within the block
-
-  d2offset = params.ias[2] - 1 + 1
-  d1offset = params.ias[1] - 1 + 1
-
-  idxs = params.idxs
-  @simd for i=1:size(idxs, 2)
-    d1 = idxs[1, i]
-    d2 = idxs[2, i]
-
-    @simd for d1block = 0:15
-      d1blockidx = 16*(d1 - 1) + d1block + d1offset
-      @simd for d2block = 0:15
-        d2blockidx = 16*(d2 - 1) + d2block + d2offset
-        idx = (d1blockidx, d2blockidx)
-        kernel5(params, idx, u_i, u_ip1)
-      end
-    end
-  end
-
-  return nothing
-end
-
 function blockLoop5_2_16{T}(params::ParamType{2}, u_i::AbstractArray{T, 3}, u_ip1::AbstractArray{T, 3})
 # decompose grid in blocks of size 16
 # outer set of loops goes over blocks, inner set over point within block
@@ -138,6 +115,32 @@ function blockLoop5_2_16{T}(params::ParamType{2}, u_i::AbstractArray{T, 3}, u_ip
           idx = (blockidx1, blockidx2)
           kernel5(params, idx, u_i, u_ip1)
         end
+      end
+    end
+  end
+
+  return nothing
+end
+
+function hilbertLoop5_2_16{T}(params::ParamType{2}, u_i::AbstractArray{T, 3}, u_ip1::AbstractArray{T, 3})
+# decompose grid into blocks of size 16
+# the first loop uses params.idxs to specify the indices of the block
+# the inner loops go over the points within the block
+
+  d2offset = params.ias[2] - 1 + 1
+  d1offset = params.ias[1] - 1 + 1
+
+  idxs = params.idxs
+  @simd for i=1:size(idxs, 2)
+    d1 = idxs[1, i]
+    d2 = idxs[2, i]
+
+    @simd for d1block = 0:15
+      d1blockidx = 16*(d1 - 1) + d1block + d1offset
+      @simd for d2block = 0:15
+        d2blockidx = 16*(d2 - 1) + d2block + d2offset
+        idx = (d1blockidx, d2blockidx)
+        kernel5(params, idx, u_i, u_ip1)
       end
     end
   end
