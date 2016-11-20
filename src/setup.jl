@@ -47,7 +47,7 @@ type ParamType{N, N2}  # N2 = N + 1
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
   nghost::Int
   coords::Array{LinSpace{Float64}, 1}
-  idxs::Array{UInt16, 2}  # indices of every point on the Hilbert curve
+  idxs::Array{Int, 2}  # indices of every point on the Hilbert curve
   f::IO
   time::Timing
 end
@@ -160,6 +160,8 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
 #    println("Loading Hilbert curve points")
     loadNpoints(npoints, N, hilbert_coords, idxs)
 #    println("finished loading Hilbert curve points")
+    idxs_big = Array(Int, size(idxs))
+    copy!(idxs_big, idxs)
 
     @assert minimum(idxs) == 1
     @assert maximum(idxs) == Ns_local[1]
@@ -169,9 +171,13 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
     idxs = zeros(UInt16, 0, 0)
   end
 
+  idxs_big = Array(Int, size(idxs))
+  copy!(idxs_big, idxs)
+
+
   t = 0.0
   time = Timing()
-  return ParamType{N, N+1}(t, 1, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, send_tags, recv_tags, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, idxs, f, time)
+  return ParamType{N, N+1}(t, 1, delta_xs, delta_xinvs2, delta_t, comm, comm_rank, comm_size, my_subs,Ns_global, Ns_local, Ns_local_global, Ns_total_local, ias, ibs, send_waited, recv_waited, send_reqs, recv_reqs, send_bufs, recv_bufs, send_tags, recv_tags, peer_nums, periodic_flags, cart_decomp,  xLs, nghost, coords, idxs_big, f, time)
 end
 
 
