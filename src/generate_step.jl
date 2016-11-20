@@ -117,7 +117,7 @@ function generate_accessor(Nblock, blocksizes::AbstractArray, npts)
 
   # hilbert block loops
   fname_outer = "stepH"
-  fname_inner = "hilberLoop"
+  fname_inner = "hilbertLoop"
   for Nblock_i = 1:Nblock  # should be N really, because we don't support
                            # partial loop blocking for Hilbert
     str *= indent*"elseif Nblock == -1 && N == $Nblock_i\n"
@@ -153,7 +153,7 @@ function get_blocksize_loop(indent, Nblock, blocksizes::AbstractArray, npts, fna
 
     str *= indent*if_type*"blocksize == $blocksize_i\n"
     indent *= "  "
-    fname = string("step", npts, "_", Nblock, "_", blocksize_i)
+    fname = string(fname_outer, npts, "_", Nblock, "_", blocksize_i)
     fname2 = string(fname_inner, npts, "_", Nblock, "_", blocksize_i)
     str *= indent*"return "*fname*", "*fname2*"\n"
     indent = indent[1:end-2]

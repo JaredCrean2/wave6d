@@ -56,7 +56,7 @@ include("setup2.jl")  # the auto-generated part
 include("curve/hilbert.jl")
 
 global const debug = false
-function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nblock)
+function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nblock, blocksize)
 # Ns = number of grid points (not including ghosts
 # xls = 2 x ndim array of xmin and xmax for each dimension
   N = length(Ns_global)
@@ -147,14 +147,29 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
       end
     end
 
-    # if not power of 2
-    if Ns_local[1] & (Ns_local[1] - 1) != 0
-      throw(ErrorException("All dimensions must be a power of 2 when using Hilbert curve"))
+    if blocksize == 0  # using hilbert curve for all points
+      # if not power of 2
+      if Ns_local[1] & (Ns_local[1] - 1) != 0
+        throw(ErrorException("All dimensions must be a power of 2 when using Hilbert curve"))
+      end
+    else
+      if Ns_local[1] % blocksize != 0
+        throw(ErrorException("All dimensions must be evenly divisible by blocksize when using Hilbert curve"))
+      end
+
+      tmp = div(Ns_local[1], blocksize)
+      if tmp & (tmp - 1) != 0
+        throw(ErrorException("All dimensions divided by blocksize must be powers of 2 when using Hilbert curve"))
+      end
     end
 
     # the calculate of the hilbert curve is too expensive to be done inside the
     # loops over spatial dimensions, so get the entire curve here
-    npoints = prod(Ns_local)
+    if blocksize == 0
+      npoints = prod(Ns_local)
+    else
+      npoints = div(Ns_local[1], blocksize)^N
+    end
     hilbert_coords, idxs = getState(N, npoints)
     checkDimensions(N, Ns_local[1])
 #    println("Loading Hilbert curve points")
@@ -164,7 +179,11 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
     copy!(idxs_big, idxs)
 
     @assert minimum(idxs) == 1
-    @assert maximum(idxs) == Ns_local[1]
+    if blocksize == 0
+      @assert maximum(idxs) == Ns_local[1]
+    else
+      @assert maximum(idxs) == div(Ns_local[1], blocksize)
+    end
 
     println("size of Hilbert index array = ", length(idxs)*sizeof(eltype(idxs))/(1024*1024), " Mbytes")
   else

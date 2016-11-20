@@ -27,7 +27,7 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
   np1 = N + 1
   str = ""
   # for consistency, include the number of blocked loops in the function name
-  fname = string("hilbertLoop", "_", npts, "_", N, "_", blocksize)
+  fname = string("hilbertLoop", npts, "_", N, "_", blocksize)
   str *= "function $fname{T}(params::ParamType{$N}, u_i::AbstractArray{T, $np1}, u_ip1::AbstractArray{T, $np1})\n"
 
   str *= "\n"
@@ -63,7 +63,7 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
     rng = string("0:", blocksize - 1)
     varname = string("d", i, "blockidx")  # true index
     offset_name = string("d", i, "offset")
-    str *= indent*"for $idxname = $rng\n"
+    str *= indent*"@simd for $idxname = $rng\n"
     indent *= "  "
     str *= indent*varname*" = $blocksize*($outer_idxname - 1) + $idxname + $offset_name\n"
   end
@@ -75,6 +75,13 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
   # call kernel
   str *= indent*"kernel$npts(params, idx, u_i, u_ip1)\n"
 
+  # end block loops
+  for i=1:N
+    indent = indent[1:end-2]
+    str *= indent*"end\n"
+  end
+
+  # end hilbert loop
   indent = indent[1:end-2]
   str *= indent*"end\n"
 

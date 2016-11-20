@@ -22,6 +22,10 @@ include("generated/blockloops_5_4.jl")
 include("generated/blockloops_5_8.jl")
 include("generated/blockloops_5_16.jl")
 include("generated/hilbertloops_5.jl")
+include("generated/hilbertblockloops_5_2.jl")
+include("generated/hilbertblockloops_5_4.jl")
+include("generated/hilbertblockloops_5_8.jl")
+include("generated/hilbertblockloops_5_16.jl")
 
 # These would be preprocessor defins controlled by the build system in C
 global const FORCE_SYNC = true  # force synchronization at the beignning of 
@@ -35,7 +39,7 @@ function runcase(fname)
 
   ndims = length(Ns_global)
   nghost = 2
-  params = ParamType(Ns_global, xLs, nghost, nblock)
+  params = ParamType(Ns_global, xLs, nghost, nblock, blocksize)
 
   size_bytes = prod(params.Ns_global + 2*nghost)*sizeof(Float64)
   if params.comm_rank == 0

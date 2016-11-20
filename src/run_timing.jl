@@ -3,7 +3,8 @@ include("generate_input.jl")
 arr = ["10", "1.0", "6", "0", "3", "2"]
 
 npoints = [4, 4, 4, 4, 4, 4] + 12
-tmax = [1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5]
+#tmax = [1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5]./10000
+tmax = zeros(length(npoints))
 
 #npoints = [16777216, 4096, 256, 64, 32, 16]
 #tmax = [1.872535253073763e-5, 0.03835888465921603, 0.410665706351607, 1.2466637514245213, 2.0268339700579308, 3.4906585039886586]./4
@@ -82,27 +83,35 @@ for d=1:maxdim
 end
 
 # run hilbert cases
+block_sizes_complete = zeros(Int, length(block_sizes) + 1)
+block_sizes_complete[2:end] = block_sizes
+
 nblock = -1
-blocksize = 0
+#blocksize = 0
 
 arr[5] = string(nblock)
-arr[6] = string(blocksize)
+#arr[6] = string(blocksize)
 
 for d=2:maxdim
   arr[1] = string(npoints[d])
   arr[2] = string(tmax[d])
   arr[3] = string(d)
 
-  println("running hilbert maxdim = ", d,)
+  for blocksize in block_sizes_complete
+    arr[6] = string(blocksize)
 
-  dirname = string("h_", d)
-  mkdir(dirname)
-  cd(dirname)
 
-  makeinput(arr)
-  runcase("input.txt")
-  gc()
-  cd("..")
+    println("running hilbert maxdim = ", d, ", blocksize = ", blocksize)
+
+    dirname = string("h_", d, "_", blocksize)
+    mkdir(dirname)
+    cd(dirname)
+
+    makeinput(arr)
+    runcase("input.txt")
+    gc()
+    cd("..")
+  end
 end
 
 
