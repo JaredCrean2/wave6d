@@ -80,8 +80,9 @@ end
 # get data for bar chart: 0 block time, n block time, hilbert time
 bardata = Array(Float64, 3, maxdim)
 fill!(bardata, -1)
-# nblocked loops, blocksize for the minimum time blocked loop
-min_nblock_data = Array(Int, 2, maxdim)
+# nblocked loops, blocksize for the minimum time blocked loop, and hilbert block
+# size
+min_nblock_data = Array(Int, 3, maxdim)
 fill!(min_nblock_data, -1)
 
 for d=1:maxdim
@@ -91,8 +92,11 @@ for d=1:maxdim
 
   if d == 1
     bardata[3, d] = bardata[2, d]
+    min_nblock_data[3, d] = 0
   else
     bardata[3, d] = minimum(hdata[d])
+    min_idx = findfirst(hdata[d], bardata[3,d])
+    min_nblock_data[3, d] = blocksizes_extended[min_idx]
   end
   min_idx = findfirst(data_extract, bardata[2, d])
   min_block, min_blocksize_idx = ind2sub(data_extract, min_idx)
