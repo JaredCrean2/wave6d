@@ -57,7 +57,7 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
   str *= "\n"
 
   # add loops over the block and calculate the true index
-  for i=1:N
+  for i=N:-1:1
     outer_idxname = string("d", i)
     idxname = string("d", i, "block")  # block loop index
     rng = string("0:", blocksize - 1)
