@@ -84,7 +84,7 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
       loop_range = string(varname_min, ":", varname_max)
     end
 
-    str *= indent*"@simd for "*varname*" = "*loop_range*"\n"
+    str *= indent*"$macro_name for "*varname*" = "*loop_range*"\n"
     indent *= "  "
   end
 
@@ -96,7 +96,7 @@ function generateLoops_blocked(N, npts, Nblock, blocksize)
     blockidx = string("blockidx", i)
     loop_range = string(0, ":", blocksize - 1)
 
-    str *= indent*"@simd for "*varname*" = "*loop_range*"\n"
+    str *= indent*"$macro_name for "*varname*" = "*loop_range*"\n"
     indent *= "  "
     str *= indent*blockidx*" = "*varname_outer*" + "*varname*"\n"
   end

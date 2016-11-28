@@ -18,6 +18,13 @@ prefix = "generated/"
 #blocksizes = [2, 4, 8, 16]
 blocksizes = [2, 4, 8, 16]
 
+# select whether or not to tell the compiler that vectorization is legal
+vectorize = false
+if vectorize
+  macro_name = "@simd"
+else
+  macro_name = ""
+end
 
 npts = length(stencil)
 nghost = div(npts, 2)

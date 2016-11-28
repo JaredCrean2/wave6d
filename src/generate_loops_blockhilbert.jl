@@ -45,7 +45,7 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
 
   str *= indent*"idxs = params.idxs\n"
 
-  str *= indent*"@simd for i=1:size(idxs, 2)\n"
+  str *= indent*"$macro_name for i=1:size(idxs, 2)\n"
   indent *= "  "
 
   # unpack the indices of the bottom left corner of the current block
@@ -63,7 +63,7 @@ function generateLoopsBlockHilbert(N, npts, blocksize)
     rng = string("0:", blocksize - 1)
     varname = string("d", i, "blockidx")  # true index
     offset_name = string("d", i, "offset")
-    str *= indent*"@simd for $idxname = $rng\n"
+    str *= indent*"$macro_name for $idxname = $rng\n"
     indent *= "  "
     str *= indent*varname*" = $blocksize*($outer_idxname - 1) + $idxname + $offset_name\n"
   end

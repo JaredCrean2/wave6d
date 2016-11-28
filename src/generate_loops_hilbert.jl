@@ -42,7 +42,7 @@ function generateLoopsHilbert(N, npts)
 
   str *= indent*"idxs = params.idxs\n"
 
-  str *= indent*"@simd for i=1:size(idxs, 2)\n"
+  str *= indent*"$macro_name for i=1:size(idxs, 2)\n"
   indent *= "  "
 
   str_inner, indent = get_tuple_hilbert(indent, N)

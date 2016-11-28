@@ -28,6 +28,7 @@ if isdir("timing_data")
 end
 
 mkdir("timing_data")
+
 cd("./timing_data")
 
 maxdim = 6
