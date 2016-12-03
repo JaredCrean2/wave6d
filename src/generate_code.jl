@@ -16,7 +16,7 @@ maxdim = 6
 neq = 2  # number of equations
 prefix = "generated/"
 #blocksizes = [2, 4, 8, 16]
-blocksizes = [2, 4, 8, 16]
+blocksizes = [2, 4, 8, 16, 32]
 
 # select whether or not to tell the compiler that vectorization is legal
 vectorize = false

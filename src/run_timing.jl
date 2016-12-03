@@ -2,13 +2,13 @@ include("generate_input.jl")
 # npoints, tmax, maxdim, writeconv, Nblock, blocksize
 arr = ["10", "1.0", "6", "0", "3", "2"]
 
-#npoints = [4, 4, 4, 4, 4, 4] + 12
+#npoints = [4, 4, 4, 4, 4, -12] + 28
 #tmax = [1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5,1.872535253073763e-5]./10000
 #tmax = zeros(length(npoints))
 
 npoints = [16777216*4, 4096, 256, 64, 32, 16]
 tmax = [1.872535253073763e-5, 0.03835888465921603, 0.410665706351607, 1.2466637514245213, 2.0268339700579308, 3.4906585039886586]./4
-
+#tmax = zeros(length(npoints))
 dir = @__FILE__
 dir_rev = reverse(dir)
 slash_idx = findfirst(dir_rev, '/')
@@ -22,17 +22,19 @@ MPI.Init()
 comm_rank = MPI.Comm_rank(MPI.COMM_WORLD)
 comm_size = MPI.Comm_size(MPI.COMM_WORLD)
 
+
 if isdir("timing_data")
   println("deleting existing data")
   rm("timing_data", recursive=true)
 end
+
 
 mkdir("timing_data")
 
 cd("./timing_data")
 
 maxdim = 6
-block_sizes = [2, 4, 8, 16]
+block_sizes = [4, 8, 16, 32]
 
 # run blocked cases
 for d=1:maxdim
@@ -43,6 +45,11 @@ for d=1:maxdim
     arr[5] = string(nblock)
     for blocksize in block_sizes
       arr[6] = string(blocksize)
+
+      # skip really large case
+      if d == 6 && blocksize > 16
+        continue
+      end
 
       # dir name is dimension, number of blocked loops, block size
       println("running maxdim = ", d, ", nblock = ", nblock, ", blocksize = ", blocksize)
@@ -101,6 +108,10 @@ for d=2:maxdim
   for blocksize in block_sizes_complete
     arr[6] = string(blocksize)
 
+    # skip really large case
+    if d == 6 && blocksize > 16
+      continue
+    end
 
     println("running hilbert maxdim = ", d, ", blocksize = ", blocksize)
 

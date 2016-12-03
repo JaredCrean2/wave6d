@@ -1,5 +1,5 @@
 maxdim = 6
-block_sizes = [2, 4, 8, 16]
+block_sizes = [ 4, 8, 16, 32]
 blocksizes_extended = vcat([0], block_sizes)
 
 nblocksizes = length(block_sizes)
@@ -15,8 +15,13 @@ data = Array(Array{Float64, 2}, maxdim)
 # inner array is for block size
 hdata = Array(Array{Float64, 1}, maxdim)
 for i=1:maxdim
-  data[i] = Array(Float64, i + offset, nblocksizes)
-  hdata[i] = Array(Float64, nblocksizes_extended)
+  if i == 6
+    offset2 = -1
+  else
+    offset2 = 0
+  end
+  data[i] = Array(Float64, i + offset, nblocksizes + offset2)
+  hdata[i] = Array(Float64, nblocksizes_extended + offset2)
   fill!(data[i], -1)  # use this to filter out unused entries later
   fill!(hdata[i], -1)
 end
@@ -25,6 +30,10 @@ for d=1:maxdim
   for nblock=1:d
     for blocksize_idx = 1:nblocksizes
        blocksize = block_sizes[blocksize_idx]
+
+       if d == 6 && blocksize > 16
+         continue
+       end
 
       # dir name is dimension, number of blocked loops, block size
       println("getting maxdim = ", d, ", nblock = ", nblock, ", blocksize = ", blocksize)
@@ -51,7 +60,12 @@ for d=1:maxdim
   data_i = readdlm(fname_i)
   # get the compute timing
   # use the unblocked case as a data point on all block sizes
-  for blocksize_idx = 1:nblocksizes
+  if d == 6 
+    nblocksizes_ = nblocksizes - 1
+  else
+    nblocksizes_ = nblocksizes
+  end
+  for blocksize_idx = 1:nblocksizes_
     data[d][1, blocksize_idx] = data_i[2]
   end
 end
@@ -62,6 +76,10 @@ blocksize = 0
 for d=2:maxdim
   for blocksize_idx = 1:nblocksizes_extended
     blocksize = blocksizes_extended[blocksize_idx]
+
+    if d == 6 && blocksize > 16
+      continue
+    end
 
     println("getting hilbert maxdim = ", d, ", blocksize = ", blocksize)
     dirname = string("h_", d, "_", blocksize)

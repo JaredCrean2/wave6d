@@ -21,11 +21,13 @@ include("generated/blockloops_5_2.jl")
 include("generated/blockloops_5_4.jl")
 include("generated/blockloops_5_8.jl")
 include("generated/blockloops_5_16.jl")
+include("generated/blockloops_5_32.jl")
 include("generated/hilbertloops_5.jl")
 include("generated/hilbertblockloops_5_2.jl")
 include("generated/hilbertblockloops_5_4.jl")
 include("generated/hilbertblockloops_5_8.jl")
 include("generated/hilbertblockloops_5_16.jl")
+include("generated/hilbertblockloops_5_32.jl")
 
 # These would be preprocessor defins controlled by the build system in C
 global const FORCE_SYNC = true  # force synchronization at the beignning of 

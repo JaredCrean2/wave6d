@@ -7,6 +7,8 @@ type Timing
   end
 end
 
+typealias IdxInt UInt16  # type to use of Hilbert indices
+
 function write_timing(time::Timing, fname)
 
   f = open(fname, "w")
@@ -47,7 +49,7 @@ type ParamType{N, N2}  # N2 = N + 1
   xLs::Array{Float64, 2}  # xmin and xmax for each dimension
   nghost::Int
   coords::Array{LinSpace{Float64}, 1}
-  idxs::Array{Int, 2}  # indices of every point on the Hilbert curve
+  idxs::Array{IdxInt, 2}  # indices of every point on the Hilbert curve
   f::IO
   time::Timing
 end
@@ -190,7 +192,7 @@ function ParamType(Ns_global::Array{Int, 1}, xLs::Array{Float64, 2}, nghost, nbl
     idxs = zeros(UInt16, 0, 0)
   end
 
-  idxs_big = Array(Int, size(idxs))
+  idxs_big = Array(IdxInt, size(idxs))
   copy!(idxs_big, idxs)
 
 
