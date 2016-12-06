@@ -28,10 +28,12 @@ function lserk(f::Function, tmax, u::AbstractArray, params)
 #  k4 = zeros(u)
 #  u_tmp = zeros(u)
 
+  tsteps_expected = div(tmax, delta_t) + 1
+  println("expected number of time steps = ", tsteps_expected)
   tstep = 1
   while (t < tmax)
 
-    if tstep % 100 == 0
+    if tstep % 1 == 0
      if params.comm_rank == 0
        println("t = ", t)
      end

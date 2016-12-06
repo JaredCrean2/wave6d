@@ -1,6 +1,6 @@
 include("generate_input.jl")
 # npoints, tmax, maxdim, writeconv, Nblock, blocksize
-arr = ["8", "1.0", "2", "1", "-1", "16"]
+arr = ["4", "0.25", "6", "1", "0", "16"]
 
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -22,7 +22,7 @@ if comm_rank == 0
 end
 
 N = 16
-for i=1:4
+for i=1:1
   arr[1] = string(N)
   MPI.Barrier(MPI.COMM_WORLD)
   if comm_rank == 0

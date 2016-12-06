@@ -1,5 +1,5 @@
 include("hilbert.jl")
-
+#=
 ndims = 6
 npoints = 16^6
 
@@ -22,3 +22,17 @@ checkDimensions(ndims, 16)
 loadNpoints(npoints, ndims, coords, idxs)
 
 writedlm("hdata3.dat", idxs.' - 1)
+=#
+
+ndims = 2
+npoints = 8^ndims
+coords, idxs = getState(ndims, npoints)
+loadNpoints(npoints, ndims, coords, idxs)
+writedlm("hdata2.dat", idxs.')
+
+ndims = 3
+npoints = 8^ndims
+coords, idxs = getState(ndims, npoints)
+loadNpoints(npoints, ndims, coords, idxs)
+writedlm("hdata3.dat", idxs.')
+

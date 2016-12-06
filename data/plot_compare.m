@@ -4,7 +4,7 @@ clc
 close all
 
 maxdim = 6;
-blocksizes = [1 2 4 8 16];
+%blocksizes = [1 2 4 8 16];
 
 for d=1:maxdim
     fname_d = strcat('bar', num2str(d), 'data.dat')

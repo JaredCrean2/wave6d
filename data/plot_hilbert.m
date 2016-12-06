@@ -4,15 +4,20 @@ clc
 close all
 
 maxdim = 6;
-blocksizes = [1 2 4 8 16];
+blocksizes_outer = [1 4 8 16 32];
 
 for d=2:maxdim
     fname_d = strcat('hd', num2str(d), 'data.dat')
     data_d = dlmread(fname_d);
     
+    if d == 6
+        blocksizes = blocksizes_outer(1:end-1)
+    else
+        blocksizes = blocksizes_outer
+    end
     figure;
     linestyle='-';   % solid line (default)
-    marker='x';     % marker type (blank by default)
+    marker='x';     c% marker type (blank by default)
     linecolor='b';  % line color blue (default)
     styleString=strcat(linestyle,marker,linecolor)
     linewidth=2;
