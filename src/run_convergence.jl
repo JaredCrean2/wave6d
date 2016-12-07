@@ -6,11 +6,16 @@ arr = ["10", "1.0", "6", "1", "3", "2"]
 
 function runconv(N, other_vals)
 
-  for i=1:4
-    arr[1] = string(N)
+  nmeshes = 4
+  if other_vals[3] == "6"
+    nmeshes = 3
+  end
+
+  for i=1:nmeshes
+    other_vals[1] = string(N)
     MPI.Barrier(MPI.COMM_WORLD)
     if comm_rank == 0
-      makeinput(arr)
+      makeinput(other_vals)
     end
     MPI.Barrier(MPI.COMM_WORLD)
     runcase("input.txt")
@@ -26,8 +31,8 @@ end
 #tmax = zeros(length(npoints))
 
 
-npoints = [4, 4, 4, 4, 4, 4 - 16] + 28
-tmax = [1.0, 0.5, 0.5, 0.25, 0.25, 0.25]
+npoints = [4, 4, 4, 4, 4, 4]
+tmax = [1.0, 0.5, 0.5, 0.25, 0.125, 0.125]*32
 #tmax = zeros(length(npoints))
 dir = @__FILE__
 dir_rev = reverse(dir)
@@ -54,10 +59,12 @@ mkdir("convergence_data")
 cd("./convergence_data")
 
 maxdim = 6
-block_sizes = [4, 8, 16, 32]
+block_sizes = [4]
 
 # run blocked cases
-for d=1:maxdim
+
+for d=maxdim:maxdim
+#for d=1:maxdim
   arr[1] = string(npoints[d])
   arr[2] = string(tmax[d])
   arr[3] = string(d)

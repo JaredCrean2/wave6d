@@ -33,7 +33,7 @@ function lserk(f::Function, tmax, u::AbstractArray, params)
   tstep = 1
   while (t < tmax)
 
-    if tstep % 1 == 0
+    if tstep % 10 == 0
      if params.comm_rank == 0
        println("t = ", t)
      end
